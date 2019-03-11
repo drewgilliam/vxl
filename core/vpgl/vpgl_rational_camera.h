@@ -78,6 +78,27 @@
 //    z     18       3
 //    1     19       0
 //
+//  Users may additionally apply an affine correction to the projection.
+//  this correction occurs after 3D points are projected into 2D, further
+//  transforming the 2D points to a new 2D^prime location.
+//
+//  Affine correction is of the form
+//    |a b c|   |u|   |u'|
+//    |d e f| * |v| = |v'|
+//    |0 0 1|   |1|   |1 |
+//  Where u/v is image column/row after base RPC transform, and u'/v' is
+//  image column/row after subsequent affine correction
+//
+//  When saved to file or printed to screen, the affine correction
+//  is provided as a 6-element vector in (f,e,d,c,b,a) order.
+//  This mimcs the line/samp precedence of RPB files, defining the
+//  correction as:
+//     line' = f + e*line + d*samp
+//     samp' = c + b*line + a*samp
+//  where line/samp (aka v,u) is the image row/column after base RPC
+//  transform, and line'/samp' (aka v',u') is image row/column after
+//  subsequent affine correction
+//
 #include <iostream>
 #include <string>
 #include <utility>
@@ -294,6 +315,24 @@ class vpgl_rational_camera : public vpgl_camera<T>
   vpgl_scale_offset<T> scl_off(const coor_index coor_index) const
     {return scale_offsets_[coor_index];}
 
+  //: set affine correction
+  void set_affine(const vnl_matrix_fixed<T,3,3> M);
+
+  //: set affine correction directly
+  void set_affine(T a, T b, T c, T d, T e, T f);
+
+  //: check for affine
+  bool has_affine() const
+    { return has_affine_; }
+
+  //: get affine correction
+  vnl_matrix_fixed<T,3,3> affine() const
+    { return affine_; }
+
+  //: reset/remove affine correction
+  void reset_affine();
+
+
   // --- Often useful for adjusting the camera ---
 
   //:set u-v translation offset
@@ -359,6 +398,9 @@ class vpgl_rational_camera : public vpgl_camera<T>
   // members
   vnl_matrix_fixed<T, 4, 20> rational_coeffs_;
   std::vector<vpgl_scale_offset<T> > scale_offsets_;
+
+  bool has_affine_;
+  vnl_matrix_fixed<T, 3, 3> affine_;
 };
 
 //: Write to stream

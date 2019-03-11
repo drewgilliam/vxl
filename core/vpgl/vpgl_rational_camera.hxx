@@ -31,6 +31,7 @@ vpgl_rational_camera<T>::vpgl_rational_camera()
   rational_coeffs_[NEU_V][15]=1;// y coefficient
   vpgl_scale_offset<T> soff;
   scale_offsets_.resize(5, soff);
+  this->reset_affine();
 }
 
 
@@ -51,6 +52,7 @@ vpgl_rational_camera<T>::vpgl_rational_camera(
   this->set_coefficients(neu_u, den_u, neu_v, den_v, input_order);
   this->set_scale_offsets(x_scale, x_off, y_scale, y_off, z_scale, z_off,
                           u_scale, u_off, v_scale, v_off);
+  this->reset_affine();
 }
 
 //: Constructor from 4 coefficient arrays and 5 scale, offset pairs.
@@ -71,6 +73,7 @@ vpgl_rational_camera<T>::vpgl_rational_camera(
   this->set_coefficients(neu_u, den_u, neu_v, den_v, input_order);
   this->set_scale_offsets(x_scale, x_off, y_scale, y_off, z_scale, z_off,
                           u_scale, u_off, v_scale, v_off);
+  this->reset_affine();
 }
 
 // Constructor with an array encoding of the coefficients
@@ -83,6 +86,7 @@ vpgl_rational_camera<T>::vpgl_rational_camera(
 {
   this->set_coefficients(rational_coeffs,input_order);
   this->set_scale_offsets(scale_offsets);
+  this->reset_affine();
 }
 
 // Constructor with a vnl matrix of coefficients
@@ -95,6 +99,7 @@ vpgl_rational_camera<T>::vpgl_rational_camera(
 {
   this->set_coefficients(rational_coeffs,input_order);
   this->set_scale_offsets(scale_offsets);
+  this->reset_affine();
 }
 
 
@@ -240,6 +245,40 @@ void vpgl_rational_camera<T>::set_scale_offsets(
 
 
 //--------------------------------------
+// Set affine correction
+
+// set from vnl_matrix_fixed
+template <class T>
+void vpgl_rational_camera<T>::set_affine(vnl_matrix_fixed<T,3,3> M)
+{
+  this->set_affine(M[0][0],M[0][1],M[0][2],
+                   M[1][0],M[1][1],M[1][2]);
+}
+
+// set from 6 individual values
+template <class T>
+void vpgl_rational_camera<T>::set_affine(T a, T b, T c, T d, T e, T f)
+{
+  T A[] = { a, b, c,
+            d, e, f,
+            0, 0, 1 };
+  affine_ = vnl_matrix_fixed<T,3,3>(A);
+  has_affine_ = true;
+}
+
+// set from 6 individual values
+template <class T>
+void vpgl_rational_camera<T>::reset_affine()
+{
+  T A[] = { 1, 0, 0,
+            0, 1, 0,
+            0, 0, 1 };
+  affine_ = vnl_matrix_fixed<T,3,3>(A);
+  has_affine_ = false;
+}
+
+
+//--------------------------------------
 // Utility functions
 
 //: Create a vector with the internal VXL order of monomial terms
@@ -322,6 +361,11 @@ void vpgl_rational_camera<T>::project(
   // unscale the resulting image coordinates
   u = scale_offsets_[U_INDX].un_normalize(su);
   v = scale_offsets_[V_INDX].un_normalize(sv);
+  // apply affine correction
+  if (has_affine_) {
+    u = affine_[0][0] * u + affine_[0][1] * v + affine_[0][2];
+    v = affine_[1][0] * u + affine_[1][1] * v + affine_[1][2];
+  }
 }
 
 // vnl interface
@@ -362,8 +406,10 @@ void vpgl_rational_camera<T>::write_pvl(
   ostr << "satId = \"????\";\n"
        << "bandId = \"RGB\";\n"
        << "SpecId = \"" << vpgl_rational_order_func::to_string(output_order)
-          << "\";" << std::endl
-       << "BEGIN_GROUP = IMAGE" << std::endl
+          << "\";" << std::endl;
+
+  // image group
+  ostr << "BEGIN_GROUP = IMAGE" << std::endl
        <<  std::endl <<  std::endl  // skip errBias and errRand fields
        << "\tlineOffset = "   << offset(V_INDX) << std::endl
        << "\tsampOffset = "   << offset(U_INDX) << std::endl
@@ -398,9 +444,28 @@ void vpgl_rational_camera<T>::write_pvl(
     }
   }
 
+  // close image group
+  ostr << "END_GROUP = IMAGE" << std::endl;
+
+  // print affine correction as (f,e,d,c,b,a) if present
+  // we print in this order to mimic the lines/samp precidence of
+  // the standard RPC information
+
+  // if (has_affine_) {
+    ostr << "BEGIN_GROUP = AFFINE" << std::endl
+         << "\taffineCorrection = (" << std::endl
+         << "\t\t" << affine_[1][2] << "," << std::endl
+         << "\t\t" << affine_[1][1] << "," << std::endl
+         << "\t\t" << affine_[1][0] << "," << std::endl
+         << "\t\t" << affine_[0][2] << "," << std::endl
+         << "\t\t" << affine_[0][1] << "," << std::endl
+         << "\t\t" << affine_[0][0] << ");" << std::endl
+         << "END_GROUP = AFFINE" << std::endl;
+         ;
+  // }
+
   // print footer
-  ostr << "END_GROUP = IMAGE" << std::endl
-       << "END;" << std::endl;
+  ostr << "END;" << std::endl;
 
   // restore ostream flags
   ostr.flags(old_settings);
@@ -476,11 +541,13 @@ bool vpgl_rational_camera<T>::read_pvl(std::istream& istr)
   bool has_xs=0,has_xo=0,has_ys=0,has_yo=0,has_zs=0,has_zo=0;
   bool has_us=0,has_uo=0,has_vs=0,has_vo=0;
 
+  std::vector<T> affine;
+
   // assume RPC00B ordering as default
   auto input_order = vpgl_rational_order::RPC00B;
 
   std::string input;
-  char bulk[100];
+  char bulk[200];
   T temp_dbl;
 
   while (!istr.eof()) {
@@ -590,27 +657,34 @@ bool vpgl_rational_camera<T>::read_pvl(std::istream& istr)
         den_u.push_back(temp_dbl);
         istr.getline(bulk,200);
       }
+    }
+
+    else if (input=="affineCorrection") {
+      istr >> input;
+      istr >> input;
+      for (int i=0; i<6; i++) {
+        istr >> temp_dbl;
+        affine.push_back(temp_dbl);
+        istr.getline(bulk,200);
+      }
+    }
+
+    // end of PVL input
+    else if (input=="END;") {
       break;
     }
   }
-
-  istr >> input;
-  if (input!="END_GROUP")
-    return false;
-  istr >> input;
-  if (input!="=")
-    return false;
-  istr >> input;
-  if (input!="IMAGE")
-    return false;
-  istr >> input;
-  if (input!="END;")
-    return false;
 
   if ( (!has_xs) || (!has_xo) || (!has_ys) || (!has_yo) || (!has_zs) || (!has_zo) ||
        (!has_us) || (!has_uo) || (!has_vs) || (!has_vo) )
   {
     std::cerr << "rational camera missing scale/offset values" << std::endl;
+    return false;
+  }
+
+  if ( (!affine.empty()) && (affine.size() != 6) )
+  {
+    std::cerr << "rational camera invalid affine correction" << std::endl;
     return false;
   }
 
@@ -625,6 +699,17 @@ bool vpgl_rational_camera<T>::read_pvl(std::istream& istr)
   this->set_coefficients(neu_u, den_u, neu_v, den_v, input_order);
   this->set_scale_offsets(x_scale, x_off, y_scale, y_off, z_scale, z_off,
                           u_scale, u_off, v_scale, v_off);
+  if (affine.empty()) {
+    this->reset_affine();
+  } else {
+    // affine correction provided as (f,e,d,c,b,a)
+    T M[] = {affine[5], affine[4], affine[3],
+             affine[2], affine[1], affine[0],
+             0,0,1};
+    auto M_vnl = vnl_matrix_fixed<T,3,3>(M);
+    this->set_affine(M_vnl);
+  }
+
   return true;
 }
 
@@ -799,6 +884,7 @@ bool vpgl_rational_camera<T>::read_txt(std::istream& istr)
   this->set_coefficients(neu_u, den_u, neu_v, den_v, input_order);
   this->set_scale_offsets(x_scale, x_off, y_scale, y_off, z_scale, z_off,
                           u_scale, u_off, v_scale, v_off);
+  this->reset_affine();
   return true;
 }
 
