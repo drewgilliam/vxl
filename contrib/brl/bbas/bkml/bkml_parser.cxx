@@ -50,6 +50,30 @@ void bkml_parser::init_params()
   data_.clear();
 }
 
+// parse from filename
+bool
+bkml_parser::parseFilename(const std::string& filename)
+{
+  // open file
+  std::FILE* file_ptr = std::fopen(filename.c_str(), "r");
+  if (!file_ptr) {
+    std::cerr << "ERROR opening KML " << filename << std::endl;
+    return false;
+  }
+
+  // parse file via parent function
+  if (!this->parseFile(file_ptr)) {
+    std::cerr << "ERROR for KML " << filename << std::endl
+              << XML_ErrorString(this->XML_GetErrorCode()) << " at line "
+              << this->XML_GetCurrentLineNumber() << std::endl;
+    return false;
+  }
+
+  // cleanup
+  return true;
+}
+
+
 void
 bkml_parser ::cdataHandler(const std::string&  /*name*/, const std::string&  /*data*/)
 {
@@ -253,121 +277,122 @@ void bkml_parser::trim_string(std::string& s)
   s = t;
 }
 
-std::vector<vgl_point_3d<double> > bkml_parser::parse_points(const std::string& kml_file)
+// parse points given a kml filename
+std::vector<vgl_point_3d<double> >
+bkml_parser::parse_points(const std::string& filename)
 {
-  auto* parser = new bkml_parser();
+  // initialize outputs
   std::vector<vgl_point_3d<double> > out;
-  std::FILE* xmlFile = std::fopen(kml_file.c_str(), "r");
-  if (!xmlFile) {
-    std::cerr << kml_file.c_str() << " error on opening the input kml file\n";
-    delete parser;
+  out.clear();
+
+  // parse file
+  bkml_parser parser;
+  if (!parser.parseFilename(filename))
     return out;
-  }
-  if (!parser->parseFile(xmlFile)) {
-    std::cerr << XML_ErrorString(parser->XML_GetErrorCode()) << " at line "
-             << parser->XML_GetCurrentLineNumber() << '\n';
-    delete parser;
-    return out;
-  }
-  // return the points retrieved from kml
-  return parser->points_;
+
+  // cleanup
+  return parser.points_;
 }
 
-//: the returned polygon only contains outer boundary
-vgl_polygon<double> bkml_parser::parse_polygon(const std::string& poly_kml_file)
+// parse polygon with outer boundary given a kml filename
+vgl_polygon<double>
+bkml_parser::parse_polygon(const std::string& filename)
 {
-  auto* parser = new bkml_parser();
+  // initialize outputs
   vgl_polygon<double> out;
-  std::FILE* xmlFile = std::fopen(poly_kml_file.c_str(), "r");
-  if (!xmlFile) {
-    std::cerr << poly_kml_file.c_str() << " error on opening the input kml file\n";
-    delete parser;
+  out.clear();
+
+  // parse file
+  bkml_parser parser;
+  if (!parser.parseFilename(filename))
     return out;
-  }
-  if (!parser->parseFile(xmlFile)) {
-    std::cerr << XML_ErrorString(parser->XML_GetErrorCode()) << " at line "
-             << parser->XML_GetCurrentLineNumber() << '\n';
-    delete parser;
-    return out;
-  }
-  // create polygon from parser
-  if (parser->polyouter_.empty()) {
+
+  // check for empty polygon
+  if (parser.polyouter_.empty()) {
     std::cerr << "input kml has no polygon outerboundary, return an empty polygon" << '\n';
-    delete parser;
     return out;
   }
-  for (auto & sh_idx : parser->polyouter_) {
+
+  // load the outer boundary
+  for (auto & sh_idx : parser.polyouter_) {
     out.new_sheet();
     auto n_points = (unsigned)sh_idx.size();
     for (unsigned pt_idx = 0; pt_idx < n_points; pt_idx++) {
       out.push_back(sh_idx[pt_idx].x(), sh_idx[pt_idx].y());
     }
   }
+
+  // cleanup
   return out;
 }
 
-vgl_polygon<double> bkml_parser::parse_polygon_with_inner(const std::string& poly_kml_file, vgl_polygon<double>& outer, vgl_polygon<double>& inner,
-                                                          unsigned& n_out, unsigned& n_in)
+// parse polygon with outer & inner boundary given a kml filename
+vgl_polygon<double>
+bkml_parser::parse_polygon_with_inner(const std::string& filename, vgl_polygon<double>& outer, vgl_polygon<double>& inner,
+                                      unsigned& n_out, unsigned& n_in)
 {
-  auto* parser = new bkml_parser();
+  // initialize outputs
   vgl_polygon<double> out;
   out.clear();
   outer.clear();
   inner.clear();
-  std::FILE* xmlFile = std::fopen(poly_kml_file.c_str(), "r");
-  if (!xmlFile) {
-    std::cerr << poly_kml_file.c_str() << " error on opening the input kml file\n";
-    delete parser;
+
+  // parse file
+  bkml_parser parser;
+  if (!parser.parseFilename(filename))
+    return out;
+
+  // check for empty polygon
+  if (parser.polyouter_.empty()) {
+    std::cerr << "input kml has no polygon outerboundary, return an empty polygon" << '\n';
     return out;
   }
-  if (!parser->parseFile(xmlFile)) {
-    std::cerr << XML_ErrorString(parser->XML_GetErrorCode()) << " at line "
-             << parser->XML_GetCurrentLineNumber() << '\n';
-    delete parser;
-    return out;
-  }
+
   // create polygon from parser
-  n_out = (unsigned)parser->polyouter_.size();
-  n_in = (unsigned)parser->polyinner_.size();
+  n_out = (unsigned)parser.polyouter_.size();
+  n_in = (unsigned)parser.polyinner_.size();
+
   // load the outer boundary
   for (unsigned sh_idx = 0; sh_idx < n_out; sh_idx++) {
     out.new_sheet();
     outer.new_sheet();
-    auto n_points = (unsigned)parser->polyouter_[sh_idx].size();
+    auto n_points = (unsigned)parser.polyouter_[sh_idx].size();
     for (unsigned pt_idx = 0; pt_idx < n_points; pt_idx++) {
-      out.push_back(parser->polyouter_[sh_idx][pt_idx].x(), parser->polyouter_[sh_idx][pt_idx].y());
-      outer.push_back(parser->polyouter_[sh_idx][pt_idx].x(), parser->polyouter_[sh_idx][pt_idx].y());
+      out.push_back(parser.polyouter_[sh_idx][pt_idx].x(), parser.polyouter_[sh_idx][pt_idx].y());
+      outer.push_back(parser.polyouter_[sh_idx][pt_idx].x(), parser.polyouter_[sh_idx][pt_idx].y());
     }
   }
+
   // load the inner boundary
   for (unsigned sh_idx = 0; sh_idx < n_in; sh_idx++) {
     out.new_sheet();
     inner.new_sheet();
-    auto n_points = (unsigned)parser->polyinner_[sh_idx].size();
+    auto n_points = (unsigned)parser.polyinner_[sh_idx].size();
     for (unsigned pt_idx = 0; pt_idx < n_points; pt_idx++) {
-      out.push_back(parser->polyinner_[sh_idx][pt_idx].x(), parser->polyinner_[sh_idx][pt_idx].y());
-      inner.push_back(parser->polyinner_[sh_idx][pt_idx].x(), parser->polyinner_[sh_idx][pt_idx].y());
+      out.push_back(parser.polyinner_[sh_idx][pt_idx].x(), parser.polyinner_[sh_idx][pt_idx].y());
+      inner.push_back(parser.polyinner_[sh_idx][pt_idx].x(), parser.polyinner_[sh_idx][pt_idx].y());
     }
   }
+
+  // cleanup
   return out;
 }
 
-bool bkml_parser::parse_location_from_kml(const std::string& kml_file, double& lat, double& lon)
+// parse single location given a kml filename
+bool
+bkml_parser::parse_location_from_kml(const std::string& filename, double& lat, double& lon)
 {
-  auto* parser = new bkml_parser();
-  std::FILE* xmlFile = std::fopen(kml_file.c_str(), "r");
-  if(!xmlFile) {
-    std::cerr << kml_file.c_str() << " error on opening the input kml file\n";
-    delete parser;
+  // initialize outputs
+  lat = 0.0;
+  lon = 0.0;
+
+  // parse file
+  bkml_parser parser;
+  if (!parser.parseFilename(filename))
     return false;
-  }
-  if(!parser->parseFile(xmlFile)){
-    std::cerr << XML_ErrorString(parser->XML_GetErrorCode()) << " at line "
-             << parser->XML_GetCurrentLineNumber() << '\n';
-    delete parser;
-    return false;
-  }
-  lat = parser->latitude_;
-  lon = parser->longitude_;
+
+  // cleanup
+  lat = parser.latitude_;
+  lon = parser.longitude_;
   return true;
 }

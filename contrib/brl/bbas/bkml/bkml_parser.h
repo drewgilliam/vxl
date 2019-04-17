@@ -58,6 +58,8 @@ class bkml_parser : public expatpp
   // parser should not delete the site, it is used afterwards
   ~bkml_parser(void) override = default;
 
+  //: parse file
+  bool parseFilename(const std::string& filename);
 
   //: parser to load the points defined in kml file
   static std::vector<vgl_point_3d<double> > parse_points(const std::string& kml_file);
