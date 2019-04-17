@@ -46,6 +46,8 @@ void bkml_parser::init_params()
   roll_dev_ = 0.0;
   right_fov_dev_ = 0.0;
   top_fov_dev_ = 0.0;
+  tags_.clear();
+  data_.clear();
 }
 
 void
@@ -58,269 +60,189 @@ bkml_parser::handleAtts(const XML_Char** /*atts*/)
 {
 }
 
-
+// begin element parsing
 void
 bkml_parser::startElement(const char* name, const char**  /*atts*/)
 {
-  if (std::strcmp(name, KML_LON_TAG) == 0) {
-    last_tag = KML_LON_TAG;
-  }
-  else if (std::strcmp(name, KML_LAT_TAG) == 0) {
-    last_tag = KML_LAT_TAG;
-  }
-  else if (std::strcmp(name, KML_ALT_TAG) == 0) {
-    last_tag = KML_ALT_TAG;
-  }
-  else if (std::strcmp(name, KML_HEAD_TAG) == 0 ) {
-    last_tag = KML_HEAD_TAG;
-  }
-  else if (std::strcmp(name, KML_HEAD_DEV_TAG) == 0 ) {
-    last_tag = KML_HEAD_DEV_TAG;
-  }
-  else if (std::strcmp(name, KML_TILT_TAG) == 0 ) {
-    last_tag = KML_TILT_TAG;
-  }
-  else if (std::strcmp(name, KML_TILT_DEV_TAG) == 0 ) {
-    last_tag = KML_TILT_DEV_TAG;
-  }
-  else if (std::strcmp(name, KML_ROLL_TAG) == 0 ) {
-    last_tag = KML_ROLL_TAG;
-  }
-  else if (std::strcmp(name, KML_ROLL_DEV_TAG) == 0 ) {
-    last_tag = KML_ROLL_DEV_TAG;
-  }
-  else if (std::strcmp(name, KML_RFOV_TAG) == 0) {
-    last_tag = KML_RFOV_TAG;
-  }
-  else if (std::strcmp(name, KML_RFOV_DEV_TAG) == 0 ) {
-    last_tag = KML_RFOV_DEV_TAG;
-  }
-  else if (std::strcmp(name, KML_TFOV_TAG) == 0) {
-    last_tag = KML_TFOV_TAG;
-  }
-  else if (std::strcmp(name, KML_TFOV_DEV_TAG) == 0) {
-    last_tag = KML_TFOV_DEV_TAG;
-  }
-  else if (std::strcmp(name, KML_NEAR_TAG) == 0) {
-    last_tag = KML_NEAR_TAG;
-  }
-  else if (std::strcmp(name, KML_CORD_TAG) == 0 && (cord_tag_ != "") ) {
-    last_tag = KML_CORD_TAG;
-  }
-  else if (std::strcmp(name, KML_PLACEMARK_NAME_TAG) == 0) {
-    last_tag = KML_PLACEMARK_NAME_TAG;
-  }
-  else if (std::strcmp(name, KML_POLYOB_TAG) == 0) {
-    cord_tag_ = KML_POLYOB_TAG;
-  }
-  else if (std::strcmp(name, KML_POLYIB_TAG) == 0) {
-    cord_tag_ = KML_POLYIB_TAG;
-  }
-  else if (std::strcmp(name, KML_LINE_TAG) == 0) {
-    cord_tag_ = KML_LINE_TAG;
-  }
-  else if (std::strcmp(name, KML_POINT_TAG) == 0) {
-    cord_tag_ = KML_POINT_TAG;
-  }
-  /*else if (std::strcmp(name, KML_COORDS_TAG) == 0) {
-  last_tag = KML_COORDS_TAG;
-  }
-  else if (std::strcmp(name, KML_PLACEMARK_NAME_TAG) == 0) {
-  last_tag = KML_PLACEMARK_NAME_TAG;
-  }*/
+  // record element list of tags
+  this->tags_.push_back(name);
 }
 
-
-void
-bkml_parser::endElement(const char*  /*name*/)
-{
-}
-
+// character data for a single tag may be split among multiple charData calls
+// https://libexpat.github.io/doc/common-pitfalls/#split-character-data
+// This function acculumates character data, later parsed in endElement
 void bkml_parser::charData(const XML_Char* s, int len)
 {
   const int leadingSpace = skipWhiteSpace(s);
   if (len==0 || len<=leadingSpace)
     return;  // called with whitespace between elements
-  if (last_tag == KML_LON_TAG) {
-    std::stringstream str;
-    for (int i =0; i<len; ++i)
-      str << s[i];
-    str >> longitude_;
-    last_tag = "";
+
+  // accumulate character data
+  for (int i = 0; i<len; ++i)
+    this->data_ += s[i];
+}
+
+// end element parsing (wrapper for processElement)
+void
+bkml_parser::endElement(const char* name)
+{
+  // name as std::string
+  std::string tag(name);
+
+  // verbose output
+  // std::cout << "  tag list: ";
+  // for (auto t : this->tags_)
+  //   std::cout << t << ",";
+  // std::cout << std::endl;
+  //
+  // std::cout << "CURRENT TAG: " << tag << std::endl;
+  // std::cout << "DATA:" << this->data_ << std::endl;
+
+  // check for malformed KML
+  if (this->tags_.back() != tag) {
+    std::cerr << "ERROR: KML may be malformed, unexpected tag end </" << tag << ">" << std::endl;
+    this->data_.clear();
+    return;
   }
-  else if (last_tag == KML_LAT_TAG) {
-    std::stringstream str;
-    for (int i =0; i<len; ++i)
-      str << s[i];
-    str >> latitude_;
-    last_tag = "";
+
+  // process non-empty data
+  else if (!this->data_.empty()) {
+    this->processElement();
   }
-  else if (last_tag == KML_PLACEMARK_NAME_TAG) {
-    std::stringstream str;
-    for (int i =0; i<len; ++i)
-      str << s[i];
-    current_name_ = str.str();
-    last_tag = "";
+
+  // clear tag & character data
+  this->tags_.pop_back();
+  this->data_.clear();
+}
+
+// process tag/data pair
+void
+bkml_parser::processElement()
+{
+  // current tag
+  std::string tag = this->tags_.back();
+
+  // istringstream for parsing
+  std::istringstream iss(this->data_);
+
+  // simple parsing
+  if (tag == KML_LON_TAG) {
+    iss >> longitude_;
+  } else if (tag == KML_LAT_TAG) {
+    iss >> latitude_;
+  } else if (tag == KML_PLACEMARK_NAME_TAG) {
+    current_name_ = iss.str();
+  } else if (tag == KML_ALT_TAG) {
+    iss >> altitude_;
+  } else if (tag == KML_HEAD_TAG) {
+    iss >> heading_;
+  } else if (tag == KML_HEAD_DEV_TAG) {
+    iss >> heading_dev_;
+  } else if (tag == KML_TILT_TAG) {
+    iss >> tilt_;
+  } else if (tag == KML_TILT_DEV_TAG) {
+    iss >> tilt_dev_;
+  } else if (tag == KML_ROLL_TAG) {
+    iss >> roll_;
+  } else if (tag == KML_ROLL_DEV_TAG) {
+    iss >> roll_dev_;
+  } else if (tag == KML_RFOV_TAG) {
+    iss >> right_fov_;
+  } else if (tag == KML_RFOV_DEV_TAG) {
+    iss >> right_fov_dev_;
+  } else if (tag == KML_TFOV_TAG) {
+    iss >> top_fov_;
+  } else if (tag == KML_TFOV_DEV_TAG) {
+    iss >> top_fov_dev_;
+  } else if (tag == KML_NEAR_TAG) {
+    iss >> near_;
   }
-  /*else if (last_tag == KML_COORDS_TAG) {
-    if (current_name_.compare("Camera Ground Truth") == 0) {
-      std::stringstream str;
-      for (int i =0; i<len; ++i) {
-        if (s[i] == ',')
-          str << ' ';
-        else
-          str << s[i];
-      }
-      str >> longitude_ >> latitude_;
-    }
-    last_tag = "";
-  }
-  else if (last_tag == KML_PLACEMARK_NAME_TAG) {
-    std::stringstream str;
-    for (int i =0; i<len; ++i)
-      str << s[i];
-    current_name_ = str.str();
-    last_tag = "";
-  }*/
-  else if (last_tag == KML_ALT_TAG) {
-    std::stringstream str;
-    for (int i =0; i<len; ++i)
-      str << s[i];
-    str >> altitude_;
-    last_tag = "";
-  }
-  else if (last_tag == KML_HEAD_TAG) {
-    std::stringstream str;
-    for (int i =0; i<len; ++i)
-      str << s[i];
-    str >> heading_;
-    last_tag = "";
-  }
-  else if (last_tag == KML_HEAD_DEV_TAG) {
-    std::stringstream str;
-    for (int i = 0; i < len; i++)
-      str << s[i];
-    str >> heading_dev_;
-    last_tag = "";
-  }
-  else if (last_tag == KML_TILT_TAG) {
-    std::stringstream str;
-    for (int i =0; i<len; ++i)
-      str << s[i];
-    str >> tilt_;
-    last_tag = "";
-  }
-  else if (last_tag == KML_TILT_DEV_TAG) {
-    std::stringstream str;
-    for (int i = 0; i < len; i++)
-      str << s[i];
-    str >> tilt_dev_;
-    last_tag = "";
-  }
-  else if (last_tag == KML_ROLL_TAG) {
-    std::stringstream str;
-    for (int i =0; i<len; ++i)
-      str << s[i];
-    str >> roll_;
-    last_tag = "";
-  }
-  else if (last_tag == KML_ROLL_DEV_TAG) {
-    std::stringstream str;
-    for (int i = 0; i < len; i++)
-      str << s[i];
-    str >> roll_dev_;
-    last_tag = "";
-  }
-  else if (last_tag == KML_RFOV_TAG) {
-    std::stringstream str;
-    for (int i =0; i<len; ++i)
-      str << s[i];
-    str >> right_fov_;
-    last_tag = "";
-  }
-  else if (last_tag == KML_RFOV_DEV_TAG) {
-    std::stringstream str;
-    for (int i = 0; i < len; i++)
-      str << s[i];
-    str >> right_fov_dev_;
-    last_tag = "";
-  }
-  else if (last_tag == KML_TFOV_TAG) {
-    std::stringstream str;
-    for (int i =0; i<len; ++i)
-      str << s[i];
-    str >> top_fov_;
-    last_tag = "";
-  }
-  else if (last_tag == KML_TFOV_DEV_TAG) {
-    std::stringstream str;
-    for (int i = 0; i < len; ++i)
-      str << s[i];
-    str >> top_fov_dev_;
-    last_tag = "";
-  }
-  else if (last_tag == KML_NEAR_TAG) {
-    std::stringstream str;
-    for (int i =0; i<len; ++i)
-      str << s[i];
-    str >> near_;
-    last_tag = "";
-  }
-  else if (last_tag == KML_CORD_TAG) {
-    std::stringstream str;
-    double x,y,z;
-    std::string str_s;
-    str_s = s;
-    std::size_t cord_end = str_s.find(KML_POLYCORE_END_TAG);
-    if (str_s[len] == '<')
-      cord_end = len;
-    else {
-      while (str_s[cord_end] != '\n')
-        cord_end--;
-      while (str_s[cord_end-1] == ' ')
-        cord_end--;
+
+  // coordinate parsing
+  else if (tag == KML_CORD_TAG) {
+
+    // tag & vertices
+    std::string coord_tag;
+    std::vector<vgl_point_3d<double> > poly;
+
+    // discover coordinate tag
+    // (iterate backwards through tags_  to find first recognized identifier)
+    for (auto it = this->tags_.rbegin(); it != this->tags_.rend(); ++it ) {
+
+      // check current tag against known tags
+      if (*it == KML_POLYOB_TAG)
+        coord_tag = KML_POLYOB_TAG;
+      else if (*it == KML_POLYIB_TAG)
+        coord_tag = KML_POLYIB_TAG;
+      else if (*it == KML_LINE_TAG)
+        coord_tag = KML_LINE_TAG;
+      else if (*it == KML_POINT_TAG )
+        coord_tag = KML_POINT_TAG;
+
+      // if known tag, we're done!
+      if (!coord_tag.empty())
+        break;
     }
 
-    for (unsigned int i=0; i<cord_end; ++i)
-      str << s[i];
-    std::vector<vgl_point_3d<double> > poly_verts;
-    while (!str.eof()) {
-      str >> x;
-      str.ignore();
-      str >> y;
-      str.ignore();
-      str >> z;
-      str.ignore(128, ' ');
-      vgl_point_3d<double> vpt(x,y,z);
-      // check whether same point exists inside the poly_verts already
-      if (std::find(poly_verts.begin(), poly_verts.end(), vpt) == poly_verts.end())
-        poly_verts.push_back(vpt);
-      //else
-      //  std::cout << "WARNING: duplicated point: "
-      //           << x << ", " << y << ", " << z << " exists in polygon coordinates and is ignored" << std::endl;
-      //if (cord_tag_ == KML_POLYOB_TAG)
-      //  poly_verts.push_back(vpt);
-      //else if (cord_tag_ == KML_POLYIB_TAG)
-      //  poly_verts.push_back(vpt);
-      //else if (cord_tag_ == KML_LINE_TAG)
-      //  poly_verts.push_back(vpt);
-      //else {
-      //  std::cout << "WARNING: shape tag can not be recognized (not LineString or Polygon)" << std::endl;
-      //}
+    // quit on invalid coord_tag
+    if (coord_tag.empty()) {
+      std::cerr << "Unrecognized coordinate tag" << std::endl;
+      return;
     }
-    if (cord_tag_ == KML_POLYOB_TAG)
-      polyouter_.push_back(poly_verts);
-    else if (cord_tag_ == KML_POLYIB_TAG)
-      polyinner_.push_back(poly_verts);
-    else if (cord_tag_ == KML_LINE_TAG)
-      linecord_.push_back(poly_verts);
-    else if (cord_tag_ == KML_POINT_TAG )
-      points_.push_back(poly_verts[0]);
-    else
-      std::cout << "WARNING: shape tag: " << cord_tag_ << " will not be parsed" << std::endl;
-    last_tag = "";
-    cord_tag_ = "";
+
+    // parse coordinates
+    // --coordinate elements separated by commas
+    // --coordinate tuple/triple separated by whitespace
+    // --for example "52.3,83.2,0.0  52.4,83.4,0.0"
+    std::vector<double> coord;
+    double val;
+
+    while (iss >> val) {
+
+      // comma separated coordiante elements
+      coord.push_back(val);
+      if (iss.peek() == ',') {
+        iss.ignore(1);
+        continue;
+      }
+
+      // save coordinate to poly
+      coord.resize(3,0.0);
+      poly.push_back(vgl_point_3d<double>(coord[0],coord[1],coord[2]));
+
+      // clear for next coordinate
+      coord.clear();
+    }
+
+    // check for valid coordinates
+    if (poly.empty()) {
+      std::cerr << "Empty coordinates for <" << coord_tag << ">" << std::endl;
+      return;
+    }
+
+    // VXL polygons are implictly closed
+    // thus remove the last element if equal to first element
+    if (poly.front() == poly.back()) {
+      poly.pop_back();
+    }
+
+    // save coordinates
+    if (coord_tag == KML_POLYOB_TAG)
+      polyouter_.push_back(poly);
+    else if (coord_tag == KML_POLYIB_TAG)
+      polyinner_.push_back(poly);
+    else if (coord_tag == KML_LINE_TAG)
+      linecord_.push_back(poly);
+    else if (coord_tag == KML_POINT_TAG )
+      points_.push_back(poly[0]);
+
+  } // end coordinate parsing
+
+  // unrecognized tag
+  else {
+    // std::cerr << "Unrecognized tag <" << tag << ">" << std::endl;
   }
+
 }
 
 void bkml_parser::trim_string(std::string& s)

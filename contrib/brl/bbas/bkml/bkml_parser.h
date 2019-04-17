@@ -104,9 +104,15 @@ class bkml_parser : public expatpp
   void cdataHandler(const std::string& name, const std::string& data);
   void init_params();
 
+  // process the current tag (called in "endElement")
+  void processElement();
+
   //element parser
   std::string last_tag;
   std::string cord_tag_;
+
+  std::vector<std::string> tags_;
+  std::string data_;
 
 };
 
