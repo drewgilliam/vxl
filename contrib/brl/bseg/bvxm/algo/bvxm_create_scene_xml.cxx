@@ -2,6 +2,8 @@
 
 #include <iostream>
 #include <string>
+#include <cmath>
+#include <algorithm>
 
 #include <bkml/bkml_parser.h>
 #include <bkml/bkml_write.h>
@@ -17,6 +19,7 @@
 #include <volm/volm_io_tools.h>
 #include <vpgl/vpgl_lvcs.h>
 #include <vul/vul_file.h>
+#include <vnl/vnl_math.h>
 
 
 // execution
@@ -77,9 +80,19 @@ unsigned int bvxm_create_scene_xml_large_scale(vgl_box_2d<double> const& bbox_re
   // enlarge the input box in meters unit
   vgl_box_2d<double> bbox_rect = enlarge_region_by_meter(bbox_rect_input, extension);
 
-  // generate square box to ensure scene coverage
-  double square_size = (bbox_rect.width() >= bbox_rect.height()) ? bbox_rect.width() : bbox_rect.height();
-  vgl_box_2d<double> bbox(bbox_rect.min_point(), square_size, square_size, vgl_box_2d<double>::min_pos);
+  // approx. deg->meter conversion for longitude.... 1° = 111,111 * cos(lat) meters
+  // approx. deg->meter conversion for latitude..... 1° = 111,111 meters
+  double lon_to_meters = 111111 * std::cos(bbox_rect.centroid_y() * vnl_math::pi_over_180);
+  double lat_to_meters = 111111;
+
+  // generate approximately square box in meter space to ensure scene coverage
+  double width_meters = bbox_rect.width() * lon_to_meters;
+  double height_meters = bbox_rect.height() * lat_to_meters;
+  double size_meters = std::max(width_meters, height_meters);
+
+  double width_degrees = size_meters / lon_to_meters;
+  double height_degrees = size_meters / lat_to_meters;
+  vgl_box_2d<double> bbox(bbox_rect.min_point(), width_degrees, height_degrees, vgl_box_2d<double>::min_pos);
 
   // truncate the world size from given voxel size
   double world_size = (unsigned)std::ceil(world_size_in / voxel_size) * (double)voxel_size;
