@@ -46,10 +46,10 @@ jobs:
           name: Build
           working_directory: /build
           command: set -x && ninja -j${NINJA_JOBS:-$((`nproc` / 2))}
-      - save_cache:
-          key: vxl_bin-{{ .Environment.CACHE_VERSION }}-{{ .Branch }}-{{ epoch }}
-          paths:
-            - /build
+      # - save_cache:
+      #     key: vxl_bin-{{ .Environment.CACHE_VERSION }}-{{ .Branch }}-{{ epoch }}
+      #     paths:
+      #       - /build
       - run:
           name: Test
           working_directory: /build
