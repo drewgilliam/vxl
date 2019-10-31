@@ -57,6 +57,9 @@ void test_simple()
   for (int j=0; j<nj; ++j) {
     for (int i=0; i<ni; ++i) {
       // "truth" is f(x,y) = x
+      std::cout << "i,j: " << i << "," << j << "  "
+                << "expected: " << i << "  "
+                << "f(i,j): " << gridded(i,j) << "\n";
       double err = gridded(i,j) - i;
       all_good &= std::fabs(err) < 0.25;
     }
@@ -110,6 +113,9 @@ void test_degenerate()
   for (int j=0; j<nj; ++j) {
     for (int i=0; i<ni; ++i) {
       // "truth" is f(x,y) = x
+      std::cout << "i,j: " << i << "," << j << "  "
+                << "expected: " << i << "  "
+                << "f(i,j): " << gridded(i,j) << "\n";
       double err = gridded(i,j) - i;
       all_good &= std::fabs(err) < 0.25;
     }
