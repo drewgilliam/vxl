@@ -156,6 +156,7 @@ class linear_interp : public base_interp<T, DATA_T>
 
     for (unsigned i=0; i<num_neighbors; ++i) {
       T dist = (neighbor_locs[i] - interp_loc).length();
+      std::cout << "dist = " << dist << " at max_dist = " << max_dist << "\n";
       if (dist <= max_dist) {
         if (dist < this->dist_eps_) {
           dist = this->dist_eps_;
