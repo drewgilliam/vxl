@@ -11,6 +11,7 @@
 #include <iostream>
 #include <stdexcept>
 #include <vector>
+#include <numeric>
 #include <bvgl/bvgl_k_nearest_neighbors_2d.h>
 #include <vnl/vnl_numeric_traits.h>
 #include <vnl/algo/vnl_matrix_inverse.h>
@@ -23,27 +24,79 @@
 namespace bpgl_gridding
 {
 
+
+//: Interpolation abstract class
+// invalid_val: Value to return when interpolation is not appropriate
+// dist_eps: The smallest meaningful distance of input points. Must be > 0.
 template<class T, class DATA_T>
-class inverse_distance_interp
+class base_interp
 {
-public:
-  inverse_distance_interp( T max_dist=vnl_numeric_traits<T>::maxval,
-                           DATA_T invalid_val=DATA_T(NAN) )
-    : max_dist_(max_dist), invalid_val_(invalid_val)
+ public:
+
+  // constructors
+  base_interp(
+      DATA_T invalid_val = DATA_T(NAN),
+      T dist_eps = 1e-3) :
+    invalid_val_(invalid_val),
+    dist_eps_(dist_eps)
   {}
-  DATA_T operator() ( vgl_point_2d<T> loc,
-                      std::vector<vgl_point_2d<T>> const& neighbor_locs,
-                      std::vector<DATA_T> const& neighbor_vals ) const
+
+  // accessors
+  DATA_T invalid_val() const { return invalid_val_; }
+  void invalid_val(DATA_T x) { invalid_val_ = x; }
+
+  T dist_eps() const { return dist_eps_; }
+  void dist_eps(T x) { dist_eps_ = x; }
+
+  // typename
+  virtual std::string type() const = 0;
+
+  // interpolation operator
+  virtual DATA_T operator() (
+      vgl_point_2d<T> interp_loc,
+      std::vector<vgl_point_2d<T> > const& neighbor_locs,
+      std::vector<DATA_T> const& neighbor_vals,
+      T max_dist
+      ) const = 0;
+
+ protected:
+
+  // parameters with defaults
+  DATA_T invalid_val_ = DATA_T(NAN);
+  T dist_eps_ = 1e-3;
+
+};
+
+
+//: Inverse distance interpolation class
+// base class parameters (see "base_interp" above)
+template<class T, class DATA_T>
+class inverse_distance_interp : public base_interp<T, DATA_T>
+{
+ public:
+
+  // constructors (inherit from base_interp)
+  using base_interp<T, DATA_T>::base_interp;
+
+  // typename
+  std::string type() const override { return "inverse_distance_interp"; }
+
+  // interpolation operator
+  DATA_T operator() (
+      vgl_point_2d<T> interp_loc,
+      std::vector<vgl_point_2d<T> > const& neighbor_locs,
+      std::vector<DATA_T> const& neighbor_vals,
+      T max_dist = vnl_numeric_traits<T>::maxval
+      ) const
   {
     T weight_sum(0);
     T val_sum(0);
-    const T eps(1e-6);
     const unsigned num_neighbors = neighbor_locs.size();
     for (unsigned i=0; i<num_neighbors; ++i) {
-      T dist = (neighbor_locs[i] - loc).length();
-      if (dist <= max_dist_) {
-        if (dist < eps) {
-          dist = eps;
+      T dist = (neighbor_locs[i] - interp_loc).length();
+      if (dist <= max_dist) {
+        if (dist < this->dist_eps_) {
+          dist = this->dist_eps_;
         }
         T weight = 1.0 / dist;
         weight_sum += weight;
@@ -51,81 +104,144 @@ public:
       }
     }
     if (weight_sum == T(0)) {
-      return invalid_val_;
+      return this->invalid_val_;
     }
     return val_sum / weight_sum;
   }
-private:
-  T max_dist_;
-  DATA_T invalid_val_;
+
+};
+
+
+//: Linear interpolation class
+// base class parameters (see "base_interp" above)
+// regularization_const: Larger regularization values will bias the solution
+//    towards "flatter" functions.  Very large values will result in weighted
+//    averages of neighbor values.
+// rcond_thresh: Threshold for inverse matrix conditioning. Must be > 0
+// relative_interp: interpolation relative to neighbor centroids
+template<class T, class DATA_T>
+class linear_interp : public base_interp<T, DATA_T>
+{
+ public:
+
+  // constructors (inherit from base_interp)
+  using base_interp<T, DATA_T>::base_interp;
+
+  // typename
+  std::string type() const override { return "linear_interp"; }
+
+  // accessors
+  T regularization_const() const { return regularization_const_; }
+  void regularization_const(T x) { regularization_const_ = x; }
+
+  T rcond_thresh() const { return rcond_thresh_; }
+  void rcond_thresh(T x) { rcond_thresh_ = x; }
+
+  T relative_interp() const { return relative_interp_; }
+  void relative_interp(T x) { relative_interp_ = x; }
+
+  // interpolation operator
+  DATA_T operator() (
+      vgl_point_2d<T> interp_loc,
+      std::vector<vgl_point_2d<T> > const& neighbor_locs,
+      std::vector<DATA_T> const& neighbor_vals,
+      T max_dist = vnl_numeric_traits<T>::maxval
+      ) const
+  {
+    const unsigned num_neighbors = neighbor_locs.size();
+
+    // vectors of valid neighbor data
+    std::vector<T> X,Y,V,D;
+    int num_valid_neighbors = 0;
+
+    for (unsigned i=0; i<num_neighbors; ++i) {
+      T dist = (neighbor_locs[i] - interp_loc).length();
+      if (dist <= max_dist) {
+        if (dist < this->dist_eps_) {
+          dist = this->dist_eps_;
+        }
+        num_valid_neighbors++;
+        X.emplace_back(neighbor_locs[i].x());
+        Y.emplace_back(neighbor_locs[i].y());
+        V.emplace_back(neighbor_vals[i]);
+        D.emplace_back(dist);
+      }
+    }
+
+    // check for sufficent neighbors
+    if (num_valid_neighbors < 3) {
+      // std::cerr << "insufficent neighbors" << std::endl;
+      return this->invalid_val_;
+    }
+
+    // absolute interpolation: origin at 0
+    // relative interpolation: origin at neighbor loc/val centroid
+    T x_origin = 0, y_origin = 0, v_origin = 0;
+    if (relative_interp_) {
+      x_origin = std::accumulate(X.begin(), X.end(), 0) / T(num_valid_neighbors);
+      y_origin = std::accumulate(Y.begin(), Y.end(), 0) / T(num_valid_neighbors);
+      v_origin = std::accumulate(V.begin(), V.end(), 0) / T(num_valid_neighbors);
+    }
+
+    // solution matrices
+    vnl_matrix<T> A(num_valid_neighbors,3);
+    vnl_vector<T> b(num_valid_neighbors);
+
+    for (unsigned i=0; i<num_valid_neighbors; ++i) {
+      T dist = D[i];
+      T weight = 1.0 / dist;
+      A[i][0] = weight * (X[i] - x_origin);
+      A[i][1] = weight * (Y[i] - y_origin);
+      A[i][2] = weight;
+      b[i] = weight * (V[i] - v_origin);
+    }
+
+    // employ Tikhonov Regularization to cope with degenerate point configurations
+    vnl_matrix<T> R(3, 3, 0);
+    for (int d=0; d<3; ++d) {
+      R[d][d] = regularization_const_;
+    }
+
+    // matrix processing
+    vnl_matrix<T> At = A.transpose();
+    vnl_matrix<T> AtA_RtR = At*A + R.transpose()*R;
+    vnl_matrix_inverse<T> inv_AtA_RtR(AtA_RtR.as_ref());
+
+    // check reciprocal condition number
+    auto rcond = inv_AtA_RtR.well_condition();
+    if (rcond < rcond_thresh_) {
+      // std::cerr << "matrix has poor condition (" << rcond << "\n" << std::endl;
+      return this->invalid_val_;
+    }
+
+    // final solution
+    vnl_vector<T> f = inv_AtA_RtR.as_matrix() * At * b;
+    DATA_T value = f[0]*(interp_loc.x() - x_origin)
+                 + f[1]*(interp_loc.y() - y_origin)
+                 + f[2] + v_origin;
+    return value;
+  }
+
+ private:
+
+  // parameters with defaults
+  T regularization_const_ = 1e-3;
+  T rcond_thresh_ = 1e-6;
+  bool relative_interp_ = true;
+
 };
 
 
 template<class T, class DATA_T>
-class linear_interp
-{
-public:
-  linear_interp( T max_dist=vnl_numeric_traits<T>::maxval,
-                 DATA_T invalid_val=DATA_T(NAN) )
-    : max_dist_(max_dist), invalid_val_(invalid_val)
-  {}
-  DATA_T operator() ( vgl_point_2d<T> loc,
-                      std::vector<vgl_point_2d<T>> const& neighbor_locs,
-                      std::vector<DATA_T> const& neighbor_vals ) const
-  {
-    T weight_sum(0);
-    T val_sum(0);
-    const T eps(1e-6);
-    const unsigned num_neighbors = neighbor_locs.size();
-    vnl_matrix<T> A(num_neighbors,3);
-    vnl_vector<T> b(num_neighbors);
-    int num_valid_neighbors = 0;
-    for (unsigned i=0; i<num_neighbors; ++i) {
-      vgl_point_2d<T> const& neighbor_loc(neighbor_locs[i]);
-      T dist = (neighbor_locs[i] - loc).length();
-      T weight = 0;
-      if (dist <= max_dist_) {
-        if (dist < eps) {
-          dist = eps;
-        }
-        weight = 1.0 / dist;
-        ++num_valid_neighbors;
-      }
-      A[i][0] = weight * neighbor_loc.x();
-      A[i][1] = weight * neighbor_loc.y();
-      A[i][2] = weight;
-      b[i] = weight * neighbor_vals[i];
-    }
-    if (num_valid_neighbors < 3) {
-      return invalid_val_;
-    }
-    // employ Tikhonov Regularization to cope with degenerate point configurations
-    vnl_matrix<T> R(3, 3, 0);
-    const T reg_const = 1e-3;
-    for (int d=0; d<3; ++d) {
-      R[d][d] = reg_const;
-    }
-    vnl_matrix<T> A_transpose = A.transpose();
-    vnl_vector<T> f = vnl_matrix_inverse<T>(A_transpose*A + R.transpose()*R)*A_transpose * b;
-    DATA_T value = f[0]*loc.x() + f[1]*loc.y() + f[2];
-    return value;
-  }
-private:
-  T max_dist_;
-  DATA_T invalid_val_;
-};
-
-
-
-template<class T, class DATA_T, class INTERP_T>
 vil_image_view<DATA_T>
 grid_data_2d(std::vector<vgl_point_2d<T>> const& data_in_loc,
              std::vector<DATA_T> const& data_in,
              vgl_point_2d<T> out_upper_left,
              size_t out_ni, size_t out_nj,
              T step_size,
-             INTERP_T &interp_fun,
+             base_interp<T, DATA_T> const& interp_fun,
              unsigned num_nearest_neighbors,
+             T max_dist = vnl_numeric_traits<T>::maxval,
              double out_theta_radians=0.0)
 {
   if (data_in_loc.size() != data_in.size()) {
@@ -145,29 +261,32 @@ grid_data_2d(std::vector<vgl_point_2d<T>> const& data_in_loc,
       vnl_vector<int> neighbor_inds(num_nearest_neighbors);
       if (!knn.knn(loc, num_nearest_neighbors, neighbor_locs, neighbor_inds)) {
         throw std::runtime_error("KNN failed to return neighbors");
-        continue;
       }
       std::vector<DATA_T> neighbor_vals;
       for (auto nidx : neighbor_inds) {
         neighbor_vals.push_back(data_in[nidx]);
       }
-      T val = interp_fun(loc, neighbor_locs, neighbor_vals);
+      T val = interp_fun(loc, neighbor_locs, neighbor_vals, max_dist);
       gridded(i,j) = val;
     }
   }
   return gridded;
 }
 
- template<class pointT, class pixelT>
-void  pointset_from_grid(vil_image_view<pixelT> const& grid, vgl_point_2d<pointT> const& upper_left, pointT step_size,
-                         std::vector<vgl_point_3d<pointT> >& ptset, double out_theta_radians = 0.0){
+template<class pointT, class pixelT>
+void pointset_from_grid(vil_image_view<pixelT> const& grid,
+                        vgl_point_2d<pointT> const& upper_left,
+                        pointT step_size,
+                        std::vector<vgl_point_3d<pointT> >& ptset,
+                        double out_theta_radians = 0.0)
+{
   ptset.clear();
   vgl_vector_2d<pointT> i_vec(std::cos(out_theta_radians), std::sin(out_theta_radians));
   vgl_vector_2d<pointT> j_vec(std::sin(out_theta_radians), -std::cos(out_theta_radians));
   pointT xul = upper_left.x(), yul = upper_left.y();
   size_t ni = grid.ni(), nj = grid.nj();
-  for(size_t j = 0; j<nj; ++j)
-    for(size_t i = 0; i<ni; ++i){
+  for (size_t j = 0; j<nj; ++j) {
+    for (size_t i = 0; i<ni; ++i) {
       vgl_point_2d<pixelT> loc = upper_left +
         i*step_size*i_vec + j*step_size*j_vec;
       pointT z = grid(i,j);
@@ -175,6 +294,7 @@ void  pointset_from_grid(vil_image_view<pixelT> const& grid, vgl_point_2d<pointT
         continue;
       ptset.emplace_back(loc.x(), loc.y(), z);
     }
+  }
 }
 
 
