@@ -170,7 +170,7 @@ class linear_interp : public base_interp<T, DATA_T>
 
     // check for sufficent neighbors
     if (num_valid_neighbors < 3) {
-      // std::cerr << "insufficent neighbors" << std::endl;
+      std::cerr << "insufficent neighbors" << std::endl;
       return this->invalid_val_;
     }
 
@@ -210,7 +210,7 @@ class linear_interp : public base_interp<T, DATA_T>
     // check reciprocal condition number
     auto rcond = inv_AtA_RtR.well_condition();
     if (rcond < rcond_thresh_) {
-      // std::cerr << "matrix has poor condition (" << rcond << "\n" << std::endl;
+      std::cerr << "matrix has poor condition (" << rcond << "\n" << std::endl;
       return this->invalid_val_;
     }
 
