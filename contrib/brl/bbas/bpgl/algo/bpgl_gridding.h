@@ -226,7 +226,7 @@ class linear_interp : public base_interp<T, DATA_T>
 
   // parameters with defaults
   T regularization_const_ = 1e-3;
-  T rcond_thresh_ = 1e-6;
+  T rcond_thresh_ = 1e-8;
   bool relative_interp_ = true;
 
 };
