@@ -2,12 +2,12 @@
 #ifndef bpgl_heightmap_from_disparity_hxx_
 #define bpgl_heightmap_from_disparity_hxx_
 
-#include "bpgl_3d_from_disparity.h"
-#include "bpgl_heightmap_from_disparity.h"
-#include "bpgl_gridding.h"
-
 #include <vnl/vnl_math.h>
 #include <vgl/vgl_box_3d.h>
+
+#include "bpgl_3d_from_disparity.h"
+#include "bpgl_heightmap_from_disparity.h"
+
 
 // main convenience function - transform disparity to heightmap
 template<class T, class CAM_T>
@@ -148,15 +148,14 @@ void bpgl_heightmap<T>::_heightmap_from_pointset(
   size_t ni = static_cast<size_t>(std::floor(_heightmap_bounds.width() / _ground_sample_distance + 1));
   size_t nj = static_cast<size_t>(std::floor(_heightmap_bounds.height() / _ground_sample_distance + 1));
 
-  // gridding arguments
-  T max_dist = _neighbor_dist_factor * _ground_sample_distance;
-  bpgl_gridding::linear_interp<T, T> interp_fun(max_dist, NAN);
+  std::cout << "_heightmap_from_pointset _interp_fun_ptr type = " << _interp_fun_ptr->type() << std::endl;
 
   // heightmap gridding
+  T max_dist = _neighbor_dist_factor * _ground_sample_distance;
   heightmap_output = bpgl_gridding::grid_data_2d(
       triangulated_xy, height_vals,
       upper_left, ni, nj, _ground_sample_distance,
-      interp_fun, _num_neighbors);
+      *_interp_fun_ptr, _num_neighbors, max_dist);
 
   // bounds check to remove outliers
   T min_z = _heightmap_bounds.min_z();
@@ -183,7 +182,7 @@ void bpgl_heightmap<T>::_heightmap_from_pointset(
     scalar_output = bpgl_gridding::grid_data_2d(
         triangulated_xy, scalar_vals,
         upper_left, ni, nj, _ground_sample_distance,
-        interp_fun, _num_neighbors);
+        *_interp_fun_ptr, _num_neighbors, max_dist);
 
     // remove scalar without corresponding height
     for (int j=0; j<nj; ++j) {

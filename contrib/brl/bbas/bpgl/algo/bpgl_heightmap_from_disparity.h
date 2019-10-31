@@ -8,10 +8,11 @@
 // \date Nov 15, 2018
 //
 
+#include <memory>
 #include <vgl/vgl_box_3d.h>
 #include <vgl/vgl_pointset_3d.h>
 #include <vil/vil_image_view.h>
-
+#include "bpgl_gridding.h"
 
 /**
  * Main convenience function
@@ -55,24 +56,19 @@ class bpgl_heightmap
 
     // Accessors
     T ground_sample_distance() const { return _ground_sample_distance; }
-    void set_ground_sample_distance(T ground_sample_distance) {
-      _ground_sample_distance = ground_sample_distance;
-    }
+    void ground_sample_distance(T x) { _ground_sample_distance = x; }
 
     vgl_box_3d<T> heightmap_bounds() const { return _heightmap_bounds; }
-    void set_heightmap_bounds(vgl_box_3d<T> heightmap_bounds) {
-      _heightmap_bounds = heightmap_bounds;
-    }
+    void heightmap_bounds(vgl_box_3d<T> x) { _heightmap_bounds = x; }
 
     T neighbor_dist_factor() const { return _neighbor_dist_factor; }
-    void set_neighbor_dist_factor(T neighbor_dist_factor) {
-      _neighbor_dist_factor = neighbor_dist_factor;
-    }
+    void neighbor_dist_factor(T x) { _neighbor_dist_factor = x; }
 
     unsigned num_neighbors() const { return _num_neighbors; }
-    void set_num_neighbors(unsigned num_neighbors) {
-      _num_neighbors = num_neighbors;
-    }
+    void num_neighbors(unsigned x) { _num_neighbors = x; }
+
+    std::shared_ptr< bpgl_gridding::base_interp<T,T> > interp_fun_ptr() { return _interp_fun_ptr; }
+    void interp_fun_ptr(std::shared_ptr< bpgl_gridding::base_interp<T,T> > x) { _interp_fun_ptr = x; }
 
     //: compute pointset from triangulated image
     void pointset_from_tri(
@@ -130,10 +126,15 @@ class bpgl_heightmap
     vgl_box_3d<T> _heightmap_bounds;
     T _ground_sample_distance;
 
-    // gridding parameters
-    T _neighbor_dist_factor = 3.0;
+    // gridding parameters:
+    // number of required neighbors (_num_neighbors) within some distance
+    // (_neighbor_dist_factor * _ground_sample_distance) of each heightmap pixel
     unsigned _num_neighbors = 3;
+    T _neighbor_dist_factor = 3.0;
 
+    // gridding interpolation function (shared pointer)
+    std::shared_ptr< bpgl_gridding::base_interp<T,T> > _interp_fun_ptr
+      { std::make_shared< bpgl_gridding::linear_interp<T,T> >() };
 };
 
 #endif
