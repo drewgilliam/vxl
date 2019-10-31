@@ -35,15 +35,14 @@ void test_simple()
   size_t ni = 8, nj = 8;
   T step_size = 1.0;
   unsigned num_neighbors = 4;
-  T maxdist = 15.0f;
+  T max_dist = 15.0f;
 
-  bpgl_gridding::linear_interp<T, float> interp_fun(maxdist, NAN);
+  bpgl_gridding::linear_interp<T, float> interp_fun;
 
   vil_image_view<float> gridded =
     bpgl_gridding::grid_data_2d(sample_locs, sample_vals,
                                 upper_left, ni, nj, step_size,
-                                interp_fun,
-                                num_neighbors);
+                                interp_fun, num_neighbors, max_dist);
   bool print_grid = false;
   if (print_grid) {
     for (int j=0; j<nj; ++j) {
@@ -88,15 +87,14 @@ void test_degenerate()
   size_t ni = 6, nj = 6;
   T step_size = 1.0;
   unsigned num_neighbors = 3;
-  T maxdist = 15.0f;
+  T max_dist = 15.0f;
 
-  bpgl_gridding::linear_interp<T, float> interp_fun(maxdist, NAN);
+  bpgl_gridding::linear_interp<T, float> interp_fun;
 
   vil_image_view<float> gridded =
     bpgl_gridding::grid_data_2d(sample_locs, sample_vals,
                                 upper_left, ni, nj, step_size,
-                                interp_fun,
-                                num_neighbors);
+                                interp_fun, num_neighbors, max_dist);
   bool print_grid = false;
   if (print_grid) {
     for (int j=0; j<nj; ++j) {
@@ -119,7 +117,7 @@ void test_degenerate()
 }
 
 void test_interp_real()
-{ 
+{
   // A test case derived from a real example giving unexpected results
   std::vector<vgl_point_2d<double>> ctrl_pts;
   ctrl_pts.emplace_back(9.35039, 151.517);
