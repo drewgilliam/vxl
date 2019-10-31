@@ -90,6 +90,7 @@ void test_degenerate()
   T max_dist = 15.0f;
 
   bpgl_gridding::linear_interp<T, float> interp_fun;
+  interp_fun.rcond_thresh(0);
 
   vil_image_view<float> gridded =
     bpgl_gridding::grid_data_2d(sample_locs, sample_vals,
@@ -126,7 +127,8 @@ void test_interp_real()
 
   std::vector<double> values = { 47.7940, 46.3976, 47.7940 };
 
- bpgl_gridding::linear_interp<double, double> interp;
+  bpgl_gridding::linear_interp<double, double> interp;
+  interp_fun.rcond_thresh(0);
 
   vgl_point_2d<double> test_point(9, 151.999);
   double value = interp(test_point, ctrl_pts, values);
