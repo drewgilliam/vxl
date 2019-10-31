@@ -127,11 +127,11 @@ void test_interp_real()
 
   std::vector<double> values = { 47.7940, 46.3976, 47.7940 };
 
-  bpgl_gridding::linear_interp<double, double> interp;
+  bpgl_gridding::linear_interp<double, double> interp_fun;
   interp_fun.rcond_thresh(0);
 
   vgl_point_2d<double> test_point(9, 151.999);
-  double value = interp(test_point, ctrl_pts, values);
+  double value = interp_fun(test_point, ctrl_pts, values);
 
   TEST_NEAR("interpolated value in correct range", value, 47.0, 1.0);
 }
