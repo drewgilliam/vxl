@@ -109,11 +109,9 @@ void bsgm_prob_pairwise_dsm::compute_height(
   // triangulated image
   tri_3d = bpgl_3d_from_disparity(cam, cam_reference, disparity);
 
-  // convert triangulated image to pointset
-  bpgl_heightmap<float> bh(this->scene_box_as_float(), params_.point_sample_dist_);
+  // convert triangulated image to pointset & heightmap
+  auto bh = this->get_bpgl_heightmap();
   bh.pointset_from_tri(tri_3d, ptset);
-
-  // convert pointset to heightmap
   bh.heightmap_from_pointset(ptset, heightmap);
 }
 
@@ -188,7 +186,7 @@ bool bsgm_prob_pairwise_dsm::compute_prob()
   }
 
   // convert pointset to images
-  bpgl_heightmap<float> bh(this->scene_box_as_float(), params_.point_sample_dist_);
+  auto bh = this->get_bpgl_heightmap();
   bh.heightmap_from_pointset(prob_ptset_, prob_heightmap_z_, prob_heightmap_prob_);
   return true;
 }
@@ -249,15 +247,27 @@ vil_image_view<vxl_byte> bsgm_prob_pairwise_dsm::bool_to_byte(
   return ret;
 }
 
-// scene box as float
-vgl_box_3d<float> bsgm_prob_pairwise_dsm::scene_box_as_float() const
+// return bpgl_heightmap class
+bpgl_heightmap<float>
+bsgm_prob_pairwise_dsm::get_bpgl_heightmap() const
 {
-  return vgl_box_3d<float>(float(scene_box_.min_x()),
-                           float(scene_box_.min_y()),
-                           float(scene_box_.min_z()),
-                           float(scene_box_.max_x()),
-                           float(scene_box_.max_y()),
-                           float(scene_box_.max_z()));
+  // scene box as float
+  auto scene_box_as_float = vgl_box_3d<float>(
+      float(this->scene_box_.min_x()),
+      float(this->scene_box_.min_y()),
+      float(this->scene_box_.min_z()),
+      float(this->scene_box_.max_x()),
+      float(this->scene_box_.max_y()),
+      float(this->scene_box_.max_z()));
+
+  // return bpgl_heightmap instance
+  bpgl_heightmap<float> bh;
+  bh.ground_sample_distance(this->params_.ground_sample_dist_);
+  bh.heightmap_bounds(scene_box_as_float);
+  bh.num_neighbors(this->params_.num_neighbors_);
+  bh.neighbor_dist_factor(this->params_.neighbor_dist_factor_);
+  bh.interp_fun_ptr(this->params_.interp_fun_ptr_);
+  return bh;
 }
 
 static void map_prob_to_color(float prob, float& r, float& g, float& b)
