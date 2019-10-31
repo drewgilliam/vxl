@@ -209,9 +209,9 @@ class linear_interp : public base_interp<T, DATA_T>
 
     // check reciprocal condition number
     auto rcond = inv_AtA_RtR.well_condition();
-    std::cout << "matrix condition (" << rcond << "\n" << std::endl;
+    std::cout << "matrix condition (" << rcond << ")\n" << std::endl;
     if (rcond < rcond_thresh_) {
-      std::cerr << "matrix has poor condition (" << rcond << "\n" << std::endl;
+      std::cerr << "matrix has poor condition (" << rcond << ")\n" << std::endl;
       return this->invalid_val_;
     }
 
@@ -226,8 +226,8 @@ class linear_interp : public base_interp<T, DATA_T>
  private:
 
   // parameters with defaults
-  T regularization_const_ = 1e-3;
-  T rcond_thresh_ = 1e-8;
+  T regularization_const_ = 1e-1;
+  T rcond_thresh_ = 1e-6;
   bool relative_interp_ = true;
 
 };
