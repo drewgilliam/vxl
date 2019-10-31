@@ -36,7 +36,7 @@ class base_interp
   // constructors
   base_interp(
       DATA_T invalid_val = DATA_T(NAN),
-      T dist_eps = 1e-3) :
+      T dist_eps = 1e-6) :
     invalid_val_(invalid_val),
     dist_eps_(dist_eps)
   {}
@@ -63,7 +63,7 @@ class base_interp
 
   // parameters with defaults
   DATA_T invalid_val_ = DATA_T(NAN);
-  T dist_eps_ = 1e-3;
+  T dist_eps_ = 1e-6;
 
 };
 
@@ -209,6 +209,7 @@ class linear_interp : public base_interp<T, DATA_T>
 
     // check reciprocal condition number
     auto rcond = inv_AtA_RtR.well_condition();
+    std::cout << "matrix condition (" << rcond << "\n" << std::endl;
     if (rcond < rcond_thresh_) {
       std::cerr << "matrix has poor condition (" << rcond << "\n" << std::endl;
       return this->invalid_val_;
