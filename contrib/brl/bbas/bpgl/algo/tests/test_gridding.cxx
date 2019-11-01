@@ -43,7 +43,7 @@ void test_simple()
   vil_image_view<float> gridded =
     bpgl_gridding::grid_data_2d(sample_locs, sample_vals,
                                 upper_left, ni, nj, step_size, interp_fun,
-                                min_neighbors, num_neighbors, max_dist);
+                                min_neighbors, max_neighbors, max_dist);
   bool print_grid = false;
   if (print_grid) {
     for (int j=0; j<nj; ++j) {
@@ -100,7 +100,7 @@ void test_degenerate()
   vil_image_view<float> gridded =
     bpgl_gridding::grid_data_2d(sample_locs, sample_vals,
                                 upper_left, ni, nj, step_size, interp_fun,
-                                min_neighbors, num_neighbors, max_dist);
+                                min_neighbors, max_neighbors, max_dist);
   bool print_grid = false;
   if (print_grid) {
     for (int j=0; j<nj; ++j) {
