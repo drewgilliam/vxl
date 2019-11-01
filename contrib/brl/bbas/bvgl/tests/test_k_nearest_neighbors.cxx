@@ -109,6 +109,11 @@ static void test_k_nearest_neighbors_2d()
   std::vector<vgl_point_2d<double>> ptset {p0, p1, p2, p3, p4};
 
   bvgl_k_nearest_neighbors_2d<double> knn2d(ptset);
+  bool good = knn2d.is_valid();
+  TEST("knn2d valid", good, true);
+  if (!good) {
+    return;
+  }
 
   unsigned index=0;
   vgl_point_2d<double> q1(0.5, 0.5);
