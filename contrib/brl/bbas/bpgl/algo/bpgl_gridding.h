@@ -301,7 +301,7 @@ grid_data_2d(std::vector<vgl_point_2d<T>> const& data_in_loc,
   if (size_t(min_neighbors) > npts) {
     throw std::runtime_error("Fewer points than minimum number of neighbors");
   }
-  if (size_t(max_neighbors) < npts) {
+  if (size_t(max_neighbors) > npts) {
     max_neighbors = unsigned(npts);
   }
   if (min_neighbors > max_neighbors) {
