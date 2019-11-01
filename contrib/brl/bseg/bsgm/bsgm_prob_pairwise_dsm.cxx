@@ -264,6 +264,7 @@ bsgm_prob_pairwise_dsm::get_bpgl_heightmap() const
   bpgl_heightmap<float> bh;
   bh.ground_sample_distance(this->params_.ground_sample_dist_);
   bh.heightmap_bounds(scene_box_as_float);
+  bh.min_neighbors(this->params_.min_neighbors_);
   bh.max_neighbors(this->params_.max_neighbors_);
   bh.neighbor_dist_factor(this->params_.neighbor_dist_factor_);
   bh.interp_fun_ptr(this->params_.interp_fun_ptr_);
