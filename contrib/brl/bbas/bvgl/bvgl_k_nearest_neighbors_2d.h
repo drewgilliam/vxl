@@ -156,6 +156,9 @@ bool bvgl_k_nearest_neighbors_2d<Type>::knn_indices(
     // add valid index to list
     neighbor_indices.push_back(static_cast<unsigned>(indices[i]));
   }
+
+  // success
+  return true;
 }
 
 
