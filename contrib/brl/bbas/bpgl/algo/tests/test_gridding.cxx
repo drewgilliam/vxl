@@ -34,15 +34,16 @@ void test_simple()
   vgl_point_2d<T> upper_left(0.0f, 0.0f);
   size_t ni = 8, nj = 8;
   T step_size = 1.0;
-  unsigned num_neighbors = 5;
-  T max_dist = 2.0f;
+  unsigned min_neighbors = 3;
+  unsigned max_neighbors = 5;
+  T max_dist = 15.0f;
 
   bpgl_gridding::linear_interp<T, float> interp_fun;
 
   vil_image_view<float> gridded =
     bpgl_gridding::grid_data_2d(sample_locs, sample_vals,
-                                upper_left, ni, nj, step_size,
-                                interp_fun, num_neighbors, max_dist);
+                                upper_left, ni, nj, step_size, interp_fun,
+                                min_neighbors, num_neighbors, max_dist);
   bool print_grid = false;
   if (print_grid) {
     for (int j=0; j<nj; ++j) {
@@ -89,7 +90,8 @@ void test_degenerate()
   vgl_point_2d<T> upper_left(0.0f, 0.0f);
   size_t ni = 6, nj = 6;
   T step_size = 1.0;
-  unsigned num_neighbors = 3;
+  unsigned min_neighbors = 3;
+  unsigned max_neighbors = 5;
   T max_dist = 15.0f;
 
   bpgl_gridding::linear_interp<T, float> interp_fun;
@@ -97,8 +99,8 @@ void test_degenerate()
 
   vil_image_view<float> gridded =
     bpgl_gridding::grid_data_2d(sample_locs, sample_vals,
-                                upper_left, ni, nj, step_size,
-                                interp_fun, num_neighbors, max_dist);
+                                upper_left, ni, nj, step_size, interp_fun,
+                                min_neighbors, num_neighbors, max_dist);
   bool print_grid = false;
   if (print_grid) {
     for (int j=0; j<nj; ++j) {

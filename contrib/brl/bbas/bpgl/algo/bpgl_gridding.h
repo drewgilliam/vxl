@@ -172,10 +172,10 @@ class linear_interp : public base_interp<T, DATA_T>
 
         // modified shepard's method
         // weight = ((max(0,R-d)/(R*d))^2
-        T weight = (max_dist - dist) / (max_dist * dist);
-        weight *= weight;
+        // T weight = (max_dist - dist) / (max_dist * dist);
+        // weight *= weight;
 
-        // T weight = 1.0 / dist;
+        T weight = 1.0 / dist;
         W.emplace_back(weight);
       }
     }
@@ -278,7 +278,8 @@ grid_data_2d(std::vector<vgl_point_2d<T>> const& data_in_loc,
              size_t out_ni, size_t out_nj,
              T step_size,
              base_interp<T, DATA_T> const& interp_fun,
-             unsigned num_nearest_neighbors,
+             unsigned min_neighbors = 3,
+             unsigned max_neighbors = 5,
              T max_dist = vnl_numeric_traits<T>::maxval,
              double out_theta_radians=0.0)
 {
@@ -293,22 +294,30 @@ grid_data_2d(std::vector<vgl_point_2d<T>> const& data_in_loc,
   vgl_vector_2d<T> i_vec(std::cos(out_theta_radians), std::sin(out_theta_radians));
   vgl_vector_2d<T> j_vec(std::sin(out_theta_radians), -std::cos(out_theta_radians));
 
+  // loop across all grid values
   vil_image_view<DATA_T> gridded(out_ni, out_nj);
   for (unsigned j=0; j<out_nj; ++j) {
     for (unsigned i=0; i<out_ni; ++i) {
 
       // interpolation point
-      vgl_point_2d<T> loc = out_upper_left +
-        i*step_size*i_vec + j*step_size*j_vec;
+      vgl_point_2d<T> loc = out_upper_left
+                          + i*step_size*i_vec
+                          + j*step_size*j_vec;
 
-      // neighbor data
+      // initialize neighbor data
       std::vector<vgl_point_2d<T> > neighbor_locs;
       std::vector<unsigned> neighbor_indices;
       std::vector<DATA_T> neighbor_vals;
 
-      // retrieve (at most) k-nearest neighbors @ max_dist radius
-      if (!knn.knn(loc, num_nearest_neighbors, neighbor_locs, neighbor_indices, max_dist)) {
+      // retrieve at most max_neighbors within max_dist of interpolation point
+      if (!knn.knn(loc, max_neighbors, neighbor_locs, neighbor_indices, max_dist)) {
         throw std::runtime_error("KNN failed to return neighbors");
+      }
+
+      // check for at least min_neighbors
+      if (neighbor_indices.size < min_neighbors) {
+        gridded(i,j) = interp_fun.invalid_val();
+        continue;
       }
 
       // neighbor values for interpolation
