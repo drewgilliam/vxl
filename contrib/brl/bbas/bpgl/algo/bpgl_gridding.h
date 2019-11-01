@@ -135,8 +135,8 @@ class linear_interp : public base_interp<T, DATA_T>
   std::string type() const override { return "linear_interp"; }
 
   // accessors
-  T regularization_const() const { return regularization_const_; }
-  void regularization_const(T x) { regularization_const_ = x; }
+  T regularization_lambda() const { return regularization_lambda_; }
+  void regularization_lambda(T x) { regularization_lambda_ = x; }
 
   T rcond_thresh() const { return rcond_thresh_; }
   void rcond_thresh(T x) { rcond_thresh_ = x; }
