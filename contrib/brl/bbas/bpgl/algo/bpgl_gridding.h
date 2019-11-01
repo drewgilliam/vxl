@@ -65,7 +65,7 @@ class base_interp
 
   // parameters with defaults
   DATA_T invalid_val_ = DATA_T(NAN);
-  T dist_eps_ = 1e-4;
+  T dist_eps_ = 1e-5;
 
 };
 
@@ -246,22 +246,25 @@ class linear_interp : public base_interp<T, DATA_T>
     DATA_T value_return = static_cast<DATA_T>(value);
 
 #if 1
-    std::cout << "rcond = " << rcond << "\n"
-              << "A =\n" << A << "\n"
-              << "AtA_reg=\n" << AtA_reg << "\n"
-              << "inv_AtA_reg =\n" << inv_AtA_reg.as_matrix() << "\n"
-              << "b =\n" << b << "\n"
+    // verbose output
+    std::cout << "interp_loc (x,y) = " << interp_loc.x() << "," << interp_loc.y() << "\n"
               << "origin (x,y,v) = " << x_origin << "," << y_origin << "," << v_origin << "\n"
-              << "loc (x,y) = " << interp_loc.x() << "," << interp_loc.y() << "\n"
-              << "value_return = " << value_return << "\n"
               ;
 
     std::cout << "weight_norm = " << weight_norm << "\n";
-
     std::cout <<"normalized weights: ";
     for (auto w : W)
       std::cout << w << ",";
     std::cout << "\n";
+
+    std::cout << "A =\n" << A
+              << "b =\n" << b << "\n"
+              << "AtA_reg=\n" << AtA_reg
+              << "inv_AtA_reg =\n" << inv_AtA_reg.as_matrix()
+              << "rcond = " << rcond << "\n"
+              << "value_return = " << value_return << "\n"
+              << std::endl;
+              ;
 #endif
 
     return value_return;
