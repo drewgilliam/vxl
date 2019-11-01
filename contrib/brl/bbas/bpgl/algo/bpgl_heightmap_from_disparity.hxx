@@ -150,12 +150,19 @@ void bpgl_heightmap<T>::_heightmap_from_pointset(
 
   std::cout << "_heightmap_from_pointset _interp_fun_ptr type = " << _interp_fun_ptr->type() << std::endl;
 
-  // heightmap gridding
+  // number of neighbors for gridding = min(_max_neighbors, # of points)
+  unsigned num_neighbors = ptset.npts();
+  if (num_neighbors > _max_neighbors)
+    num_neighbors = _max_neighbors;
+
+  // maximum neighbor distance
   T max_dist = _neighbor_dist_factor * _ground_sample_distance;
+
+  // heightmap gridding
   heightmap_output = bpgl_gridding::grid_data_2d(
       triangulated_xy, height_vals,
       upper_left, ni, nj, _ground_sample_distance,
-      *_interp_fun_ptr, _num_neighbors, max_dist);
+      *_interp_fun_ptr, num_neighbors, max_dist);
 
   // bounds check to remove outliers
   T min_z = _heightmap_bounds.min_z();
@@ -182,7 +189,7 @@ void bpgl_heightmap<T>::_heightmap_from_pointset(
     scalar_output = bpgl_gridding::grid_data_2d(
         triangulated_xy, scalar_vals,
         upper_left, ni, nj, _ground_sample_distance,
-        *_interp_fun_ptr, _num_neighbors, max_dist);
+        *_interp_fun_ptr, num_neighbors, max_dist);
 
     // remove scalar without corresponding height
     for (int j=0; j<nj; ++j) {

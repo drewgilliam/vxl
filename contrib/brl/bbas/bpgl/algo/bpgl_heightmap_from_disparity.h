@@ -127,9 +127,9 @@ class bpgl_heightmap
     T _ground_sample_distance;
 
     // gridding parameters:
-    // number of required neighbors (_num_neighbors) within some distance
+    // maximum number of neighbors (_num_neighbors) within some distance
     // (_neighbor_dist_factor * _ground_sample_distance) of each heightmap pixel
-    unsigned _num_neighbors = 3;
+    unsigned _max_neighbors = 9;
     T _neighbor_dist_factor = 3.0;
 
     // gridding interpolation function (shared pointer)
