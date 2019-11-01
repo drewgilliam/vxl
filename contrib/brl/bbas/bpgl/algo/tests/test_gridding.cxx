@@ -35,7 +35,7 @@ void test_simple()
   size_t ni = 8, nj = 8;
   T step_size = 1.0;
   unsigned num_neighbors = 5;
-  T max_dist = 15.0f;
+  T max_dist = 2.0f;
 
   bpgl_gridding::linear_interp<T, float> interp_fun;
 
