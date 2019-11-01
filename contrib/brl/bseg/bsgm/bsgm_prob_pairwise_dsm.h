@@ -112,9 +112,9 @@ struct pairwise_params
   float z_vs_d_std_dev_ = 1.0f;
 
   // pointset->heightmap gridding paramters:
-  // number of required neighbors (grid_num_neighbors_) within some distance
-  // (grid_neighbor_dist_factor_ * ground_sample_dist_) of each heightmap pixel
-  unsigned num_neighbors_ = 5;
+  // maximum number of neighbors (max_neighbors_) within some distance
+  // (neighbor_dist_factor_ * ground_sample_dist_) of each heightmap pixel
+  unsigned max_neighbors_ = 9;
   float neighbor_dist_factor_ = 3.0;
 
   // gridding interpolation function (shared pointer)
