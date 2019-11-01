@@ -194,14 +194,19 @@ class linear_interp : public base_interp<T, DATA_T>
       v_origin = std::accumulate(V.begin(), V.end(), 0) / T(num_valid_neighbors);
     }
 
+    std::cout << "weights: ";
+    for (auto w : W)
+      std::cout << w << ",";
+    std::cout << "\n";
+
     // normalize weights
     T weight_sum = std::accumulate(W.begin(), W.end(), 0);
     for (auto& w : W) {
       w /= weight_sum;
     }
 
-    std::cout << "weights: ";
-    for (const auto& w : W)
+    std::cout << "normalized weights: ";
+    for (auto w : W)
       std::cout << w << ",";
     std::cout << "\n";
 
@@ -306,7 +311,7 @@ grid_data_2d(std::vector<vgl_point_2d<T>> const& data_in_loc,
         neighbor_vals.push_back(data_in[nidx]);
       }
       std::cout << "REQUEST: " << num_nearest_neighbors << " neighbors at " << max_dist << " radius.\n"
-                << "RECEIVED: " << neighbor_vals.size() << "neighbors"
+                << "RECEIVED: " << neighbor_vals.size() << " neighbors\n"
                 ;
 
       T val = interp_fun(loc, neighbor_locs, neighbor_vals, max_dist);
