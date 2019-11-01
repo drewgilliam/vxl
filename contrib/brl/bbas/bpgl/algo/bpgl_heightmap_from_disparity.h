@@ -64,6 +64,9 @@ class bpgl_heightmap
     T neighbor_dist_factor() const { return _neighbor_dist_factor; }
     void neighbor_dist_factor(T x) { _neighbor_dist_factor = x; }
 
+    unsigned min_neighbors() const { return _min_neighbors; }
+    void min_neighbors(unsigned x) { _min_neighbors = x; }
+
     unsigned max_neighbors() const { return _max_neighbors; }
     void max_neighbors(unsigned x) { _max_neighbors = x; }
 
@@ -127,8 +130,9 @@ class bpgl_heightmap
     T _ground_sample_distance;
 
     // gridding parameters:
-    // maximum number of neighbors (_num_neighbors) within some distance
+    // allowable number of neighbors (between min/max neighbors) within some distance
     // (_neighbor_dist_factor * _ground_sample_distance) of each heightmap pixel
+    unsigned _min_neighbors = 3;
     unsigned _max_neighbors = 9;
     T _neighbor_dist_factor = 3.0;
 

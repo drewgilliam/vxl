@@ -2,6 +2,7 @@
 #ifndef bpgl_heightmap_from_disparity_hxx_
 #define bpgl_heightmap_from_disparity_hxx_
 
+#include <algorithm>
 #include <vnl/vnl_math.h>
 #include <vgl/vgl_box_3d.h>
 
@@ -132,6 +133,11 @@ void bpgl_heightmap<T>::_heightmap_from_pointset(
     vil_image_view<T>& scalar_output,
     bool ignore_scalar)
 {
+  // check pointset sufficency
+  if (ptset.npts() < _min_neighbors) {
+    throw std::runtime_error("Not enough points in pointset for interpolation");
+  }
+
   // pointset as vectors
   std::vector<vgl_point_2d<T> > triangulated_xy;
   std::vector<T> height_vals;
@@ -150,10 +156,9 @@ void bpgl_heightmap<T>::_heightmap_from_pointset(
 
   std::cout << "_heightmap_from_pointset _interp_fun_ptr type = " << _interp_fun_ptr->type() << std::endl;
 
-  // number of neighbors for gridding = min(_max_neighbors, # of points)
-  unsigned num_neighbors = ptset.npts();
-  if (num_neighbors > _max_neighbors)
-    num_neighbors = _max_neighbors;
+  // number of neighbors range
+  unsigned min_neighbors = _min_neighbors;
+  unsigned max_neighbors = std::min(size_t(_max_neighbors), ptset.npts());
 
   // maximum neighbor distance
   T max_dist = _neighbor_dist_factor * _ground_sample_distance;
@@ -161,8 +166,8 @@ void bpgl_heightmap<T>::_heightmap_from_pointset(
   // heightmap gridding
   heightmap_output = bpgl_gridding::grid_data_2d(
       triangulated_xy, height_vals,
-      upper_left, ni, nj, _ground_sample_distance,
-      *_interp_fun_ptr, num_neighbors, max_dist);
+      upper_left, ni, nj, _ground_sample_distance, *_interp_fun_ptr,
+      min_neighbors, max_neighbors, max_dist);
 
   // bounds check to remove outliers
   T min_z = _heightmap_bounds.min_z();
@@ -188,8 +193,8 @@ void bpgl_heightmap<T>::_heightmap_from_pointset(
     // scalar gridding
     scalar_output = bpgl_gridding::grid_data_2d(
         triangulated_xy, scalar_vals,
-        upper_left, ni, nj, _ground_sample_distance,
-        *_interp_fun_ptr, num_neighbors, max_dist);
+        upper_left, ni, nj, _ground_sample_distance, *_interp_fun_ptr,
+        min_neighbors, max_neighbors, max_dist);
 
     // remove scalar without corresponding height
     for (int j=0; j<nj; ++j) {
