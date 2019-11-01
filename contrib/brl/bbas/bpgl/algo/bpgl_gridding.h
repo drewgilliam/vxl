@@ -165,7 +165,6 @@ class linear_interp : public base_interp<T, DATA_T>
         X.emplace_back(neighbor_locs[i].x());
         Y.emplace_back(neighbor_locs[i].y());
         V.emplace_back(neighbor_vals[i]);
-        D.emplace_back(dist);
 
         // T weight = max_dist - dist;
         // if (weight < 0) {
