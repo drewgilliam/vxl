@@ -182,7 +182,7 @@ class linear_interp : public base_interp<T, DATA_T>
 
     // check for sufficent neighbors
     if (num_valid_neighbors < 3) {
-      std::cerr << "insufficent neighbors" << std::endl;
+      // std::cerr << "insufficent neighbors" << std::endl;
       return this->invalid_val_;
     }
 
@@ -238,7 +238,7 @@ class linear_interp : public base_interp<T, DATA_T>
     // check reciprocal condition number
     auto rcond = inv_AtA_reg.well_condition();
     if (rcond < rcond_thresh_) {
-      std::cerr << "matrix has poor condition (" << rcond << ")\n" << std::endl;
+      // std::cerr << "matrix has poor condition (" << rcond << ")\n" << std::endl;
       return this->invalid_val_;
     }
 
@@ -304,27 +304,25 @@ grid_data_2d(std::vector<vgl_point_2d<T>> const& data_in_loc,
                           + i*step_size*i_vec
                           + j*step_size*j_vec;
 
-      // initialize neighbor data
+      // retrieve at most max_neighbors within max_dist of interpolation point
       std::vector<vgl_point_2d<T> > neighbor_locs;
       std::vector<unsigned> neighbor_indices;
-      std::vector<DATA_T> neighbor_vals;
-
-      // retrieve at most max_neighbors within max_dist of interpolation point
       if (!knn.knn(loc, max_neighbors, neighbor_locs, neighbor_indices, max_dist)) {
         throw std::runtime_error("KNN failed to return neighbors");
       }
 
       // check for at least min_neighbors
-      if (neighbor_indices.size < min_neighbors) {
+      if (neighbor_indices.size() < min_neighbors) {
         gridded(i,j) = interp_fun.invalid_val();
         continue;
       }
 
       // neighbor values for interpolation
+      std::vector<DATA_T> neighbor_vals;
       for (auto nidx : neighbor_indices) {
         neighbor_vals.push_back(data_in[nidx]);
       }
-      std::cout << "REQUEST: " << num_nearest_neighbors << " neighbors at " << max_dist << " radius.\n"
+      std::cout << "REQUEST: " << min_neighbors << "-" << max_neighbors << " neighbors at " << max_dist << " radius.\n"
                 << "RECEIVED: " << neighbor_vals.size() << " neighbors\n"
                 ;
 
