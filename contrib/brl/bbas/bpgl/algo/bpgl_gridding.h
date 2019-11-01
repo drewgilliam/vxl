@@ -151,7 +151,7 @@ class linear_interp : public base_interp<T, DATA_T>
     const unsigned num_neighbors = neighbor_locs.size();
 
     // vectors of valid neighbor data
-    std::vector<T> X,Y,V,D;
+    std::vector<T> X,Y,V,D,W;
     int num_valid_neighbors = 0;
 
     for (unsigned i=0; i<num_neighbors; ++i) {
@@ -166,6 +166,17 @@ class linear_interp : public base_interp<T, DATA_T>
         Y.emplace_back(neighbor_locs[i].y());
         V.emplace_back(neighbor_vals[i]);
         D.emplace_back(dist);
+
+        // T weight = max_dist - dist;
+        // if (weight < 0) {
+        //   weight = 0;
+        // } else {
+        //   weight /= (max_dist * dist);
+        //   weight *= weight;
+        // }
+
+        T weight = 1.0 / dist;
+        W.emplace_back(weight);
       }
     }
 
@@ -184,17 +195,25 @@ class linear_interp : public base_interp<T, DATA_T>
       v_origin = std::accumulate(V.begin(), V.end(), 0) / T(num_valid_neighbors);
     }
 
-    // solution matrices
+    // normalize weights
+    T weight_sum = std::accumulate(W.begin(), W.end(), 0);
+    for (auto& w : W) {
+      w /= weight_sum;
+    }
+
+    std::cout << "weights: ";
+    for (const auto& w : W)
+      std::cout << w << ",";
+    std::cout << "\n";
+
+    // system matrices
     vnl_matrix<T> A(num_valid_neighbors,3);
     vnl_vector<T> b(num_valid_neighbors);
-
     for (unsigned i=0; i<num_valid_neighbors; ++i) {
-      T dist = D[i];
-      T weight = 1.0 / dist;
-      A[i][0] = weight * (X[i] - x_origin);
-      A[i][1] = weight * (Y[i] - y_origin);
-      A[i][2] = weight;
-      b[i] = weight * (V[i] - v_origin);
+      A[i][0] = W[i] * (X[i] - x_origin);
+      A[i][1] = W[i] * (Y[i] - y_origin);
+      A[i][2] = W[i];
+      b[i] = W[i] * (V[i] - v_origin);
     }
 
     // employ Tikhonov Regularization to cope with degenerate point configurations
