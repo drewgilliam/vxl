@@ -189,9 +189,9 @@ class linear_interp : public base_interp<T, DATA_T>
     // relative interpolation: origin at neighbor loc/val centroid
     T x_origin = 0, y_origin = 0, v_origin = 0;
     if (relative_interp_) {
-      x_origin = std::accumulate(X.begin(), X.end(), 0) / T(num_valid_neighbors);
-      y_origin = std::accumulate(Y.begin(), Y.end(), 0) / T(num_valid_neighbors);
-      v_origin = std::accumulate(V.begin(), V.end(), 0) / T(num_valid_neighbors);
+      x_origin = std::accumulate(X.begin(), X.end(), T(0)) / T(num_valid_neighbors);
+      y_origin = std::accumulate(Y.begin(), Y.end(), T(0)) / T(num_valid_neighbors);
+      v_origin = std::accumulate(V.begin(), V.end(), T(0)) / T(num_valid_neighbors);
     }
 
     std::cout << "weights: ";
@@ -200,7 +200,7 @@ class linear_interp : public base_interp<T, DATA_T>
     std::cout << "\n";
 
     // normalize weights
-    T weight_sum = std::accumulate(W.begin(), W.end(), 0);
+    T weight_sum = std::accumulate(W.begin(), W.end(), T(0));
     std::cout << "weight_sum = " << weight_sum << "\n";
     for (auto& w : W) {
       w /= weight_sum;
