@@ -64,8 +64,8 @@ class bpgl_heightmap
     T neighbor_dist_factor() const { return _neighbor_dist_factor; }
     void neighbor_dist_factor(T x) { _neighbor_dist_factor = x; }
 
-    unsigned num_neighbors() const { return _num_neighbors; }
-    void num_neighbors(unsigned x) { _num_neighbors = x; }
+    unsigned max_neighbors() const { return _max_neighbors; }
+    void max_neighbors(unsigned x) { _max_neighbors = x; }
 
     std::shared_ptr< bpgl_gridding::base_interp<T,T> > interp_fun_ptr() { return _interp_fun_ptr; }
     void interp_fun_ptr(std::shared_ptr< bpgl_gridding::base_interp<T,T> > x) { _interp_fun_ptr = x; }
