@@ -201,6 +201,7 @@ class linear_interp : public base_interp<T, DATA_T>
 
     // normalize weights
     T weight_sum = std::accumulate(W.begin(), W.end(), 0);
+    std::cout << "weight_sum = " << weight_sum << "\n";
     for (auto& w : W) {
       w /= weight_sum;
     }
