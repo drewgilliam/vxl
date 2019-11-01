@@ -166,15 +166,17 @@ class linear_interp : public base_interp<T, DATA_T>
         Y.emplace_back(neighbor_locs[i].y());
         V.emplace_back(neighbor_vals[i]);
 
-        // T weight = max_dist - dist;
-        // if (weight < 0) {
-        //   weight = 0;
-        // } else {
-        //   weight /= (max_dist * dist);
-        //   weight *= weight;
-        // }
+        // modified shepard's method
+        // weight = ((max(0, R-d)/(R*d))^2
+        T weight = max_dist - dist;
+        if (weight < 0) {
+          weight = 0;
+        } else {
+          weight /= (max_dist * dist);
+          weight *= weight;
+        }
 
-        T weight = 1.0 / dist;
+        // T weight = 1.0 / dist;
         W.emplace_back(weight);
       }
     }
@@ -199,11 +201,12 @@ class linear_interp : public base_interp<T, DATA_T>
       std::cout << w << ",";
     std::cout << "\n";
 
-    // normalize weights
-    T weight_sum = std::accumulate(W.begin(), W.end(), T(0));
-    std::cout << "weight_sum = " << weight_sum << "\n";
+    // normalize weight so max weight = 1.0
+    // this avoids floating point overflow for large weights
+    T weight_norm = *std::max_element(W.begin(), W.end());
+    std::cout << "weight_norm = " << weight_norm << "\n";
     for (auto& w : W) {
-      w /= weight_sum;
+      w /= weight_norm;
     }
 
     std::cout << "normalized weights: ";
