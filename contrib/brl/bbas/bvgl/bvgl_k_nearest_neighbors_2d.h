@@ -145,11 +145,10 @@ bool bvgl_k_nearest_neighbors_2d<Type>::knn_indices(
     // infinite distance or invalid index == no more neighbors found
     // if max_dist is finite, fewer than k neighbors is fine
     // if max_dist is infinite, fewer than k neighbors is unexpected
-    if(dists2[i] == std::numeric_limits<Type>::infinity() || indices[i]<0) {
+    if(!std::isfinite(dists2[i]) || indices[i]<0) {
       if (std::isfinite(max_dist)) {
         break;
       } else {
-        neighbor_indices.clear();
         return false;
       }
     }
