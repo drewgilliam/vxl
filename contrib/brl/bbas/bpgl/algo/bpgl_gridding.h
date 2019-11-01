@@ -151,7 +151,7 @@ class linear_interp : public base_interp<T, DATA_T>
     const unsigned num_neighbors = neighbor_locs.size();
 
     // vectors of valid neighbor data
-    std::vector<T> X,Y,V,D,W;
+    std::vector<T> X,Y,V,W;
     int num_valid_neighbors = 0;
 
     for (unsigned i=0; i<num_neighbors; ++i) {
