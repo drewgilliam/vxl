@@ -287,11 +287,28 @@ grid_data_2d(std::vector<vgl_point_2d<T>> const& data_in_loc,
              unsigned min_neighbors = 3,
              unsigned max_neighbors = 5,
              T max_dist = vnl_numeric_traits<T>::maxval,
-             double out_theta_radians=0.0)
+             double out_theta_radians = 0.0)
 {
-  if (data_in_loc.size() != data_in.size()) {
+  // total number of points
+  size_t npts = data_in_loc.size();
+
+  // validate input
+  if (npts != data_in.size()) {
     throw std::runtime_error("Input location and data arrays not equal size");
   }
+
+  // validate min/max neighbor range
+  if (size_t(min_neighbors) > npts) {
+    throw std::runtime_error("Fewer points than minimum number of neighbors");
+  }
+  if (size_t(max_neighbors) < npts) {
+    max_neighbors = unsigned(npts);
+  }
+  if (min_neighbors > max_neighbors) {
+    throw std::runtime_error("Invalid neighbor range");
+  }
+
+  // create knn instance
   bvgl_k_nearest_neighbors_2d<T> knn(data_in_loc);
   if (!knn.is_valid()) {
     throw std::runtime_error("KNN initialization failure");
@@ -332,6 +349,7 @@ grid_data_2d(std::vector<vgl_point_2d<T>> const& data_in_loc,
                 << "RECEIVED: " << neighbor_vals.size() << " neighbors\n"
                 ;
 
+      // interpolate
       T val = interp_fun(loc, neighbor_locs, neighbor_vals, max_dist);
       gridded(i,j) = val;
     }
