@@ -63,7 +63,7 @@ class base_interp
 
   // parameters with defaults
   DATA_T invalid_val_ = DATA_T(NAN);
-  T dist_eps_ = 1e-6;
+  T dist_eps_ = 1e-3;
 
 };
 
@@ -119,6 +119,10 @@ class inverse_distance_interp : public base_interp<T, DATA_T>
 //    averages of neighbor values.
 // rcond_thresh: Threshold for inverse matrix conditioning. Must be > 0
 // relative_interp: interpolation relative to neighbor centroids
+//
+// Note: internals are represented at double precision to ensure
+// accuracy of the final result.  Only on output is the resulting
+// interpolated value cast back to DATA_T
 template<class T, class DATA_T>
 class linear_interp : public base_interp<T, DATA_T>
 {
@@ -155,7 +159,7 @@ class linear_interp : public base_interp<T, DATA_T>
     int num_valid_neighbors = 0;
 
     for (unsigned i=0; i<num_neighbors; ++i) {
-      T dist = (neighbor_locs[i] - interp_loc).length();
+      T dist = static_cast<double>((neighbor_locs[i] - interp_loc).length());
       std::cout << "dist = " << dist << " at max_dist = " << max_dist << "\n";
       if (dist <= max_dist) {
         if (dist < this->dist_eps_) {
@@ -167,14 +171,9 @@ class linear_interp : public base_interp<T, DATA_T>
         V.emplace_back(neighbor_vals[i]);
 
         // modified shepard's method
-        // weight = ((max(0, R-d)/(R*d))^2
-        T weight = max_dist - dist;
-        if (weight < 0) {
-          weight = 0;
-        } else {
-          weight /= (max_dist * dist);
-          weight *= weight;
-        }
+        // weight = ((max(0,R-d)/(R*d))^2
+        T weight = (max_dist - dist) / (max_dist * dist);
+        weight *= weight;
 
         // T weight = 1.0 / dist;
         W.emplace_back(weight);
@@ -225,32 +224,34 @@ class linear_interp : public base_interp<T, DATA_T>
     }
 
     // employ Tikhonov Regularization to cope with degenerate point configurations
-    vnl_matrix<T> R(3, 3, 0);
+    // f = inv(AT * A + lambda * I) * AT * b
+    vnl_matrix<T> lambdaI(3, 3, 0);
     for (int d=0; d<3; ++d) {
-      R[d][d] = regularization_const_;
+      lambdaI[d][d] = regularization_lambda_;
     }
 
     // matrix processing
     vnl_matrix<T> At = A.transpose();
-    vnl_matrix<T> AtA_RtR = At*A + R.transpose()*R;
-    vnl_matrix_inverse<T> inv_AtA_RtR(AtA_RtR.as_ref());
+    vnl_matrix<T> AtA_reg = At*A + lambdaI;
+    vnl_matrix_inverse<T> inv_AtA_reg(AtA_reg.as_ref());
 
     // check reciprocal condition number
-    auto rcond = inv_AtA_RtR.well_condition();
+    auto rcond = inv_AtA_reg.well_condition();
     if (rcond < rcond_thresh_) {
       std::cerr << "matrix has poor condition (" << rcond << ")\n" << std::endl;
       return this->invalid_val_;
     }
 
     // final solution
-    vnl_vector<T> f = inv_AtA_RtR.as_matrix() * At * b;
+    vnl_vector<T> f = inv_AtA_reg.as_matrix() * At * b;
     DATA_T value = f[0]*(interp_loc.x() - x_origin)
                  + f[1]*(interp_loc.y() - y_origin)
                  + f[2] + v_origin;
 
     std::cout << "matrix condition =" << rcond << "\n"
               << "A =\n" << A << "\n"
-              << "inv_AtA_RtR =\n" << inv_AtA_RtR.as_matrix() << "\n"
+              << "AtA_reg=\n" << AtA_reg << "\n"
+              << "inv_AtA_reg =\n" << inv_AtA_reg.as_matrix() << "\n"
               << "b =\n" << b << "\n"
               << "origin (x,y,v) = " << x_origin << "," << y_origin << "," << v_origin << "\n"
               << "loc (x,y) = " << interp_loc.x() << "," << interp_loc.y() << "\n"
@@ -262,7 +263,7 @@ class linear_interp : public base_interp<T, DATA_T>
  private:
 
   // parameters with defaults
-  T regularization_const_ = 1e-3;
+  T regularization_lambda_ = 1e-3;
   T rcond_thresh_ = -1.0; // disabled by default
   bool relative_interp_ = true;
 
