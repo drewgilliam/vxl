@@ -270,7 +270,7 @@ class linear_interp : public base_interp<T, DATA_T>
  private:
 
   // parameters with defaults
-  double regularization_lambda_ = 1e-4;
+  double regularization_lambda_ = 1e-3;
   double rcond_thresh_ = -1.0; // disabled by default
   bool relative_interp_ = true;
 
