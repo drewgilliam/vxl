@@ -276,6 +276,9 @@ grid_data_2d(std::vector<vgl_point_2d<T>> const& data_in_loc,
     throw std::runtime_error("Input location and data arrays not equal size");
   }
   bvgl_k_nearest_neighbors_2d<T> knn(data_in_loc);
+  if (!knn.is_valid()) {
+    throw std::runtime_error("KNN initialization failure");
+  }
 
   vgl_vector_2d<T> i_vec(std::cos(out_theta_radians), std::sin(out_theta_radians));
   vgl_vector_2d<T> j_vec(std::sin(out_theta_radians), -std::cos(out_theta_radians));
@@ -283,17 +286,29 @@ grid_data_2d(std::vector<vgl_point_2d<T>> const& data_in_loc,
   vil_image_view<DATA_T> gridded(out_ni, out_nj);
   for (unsigned j=0; j<out_nj; ++j) {
     for (unsigned i=0; i<out_ni; ++i) {
+
+      // interpolation point
       vgl_point_2d<T> loc = out_upper_left +
         i*step_size*i_vec + j*step_size*j_vec;
+
+      // neighbor data
       std::vector<vgl_point_2d<T> > neighbor_locs;
-      vnl_vector<int> neighbor_inds(num_nearest_neighbors);
-      if (!knn.knn(loc, num_nearest_neighbors, neighbor_locs, neighbor_inds)) {
+      std::vector<unsigned> neighbor_indices;
+      std::vector<DATA_T> neighbor_vals;
+
+      // retrieve (at most) k-nearest neighbors @ max_dist radius
+      if (!knn.knn(loc, num_nearest_neighbors, neighbor_locs, neighbor_indices, max_dist)) {
         throw std::runtime_error("KNN failed to return neighbors");
       }
-      std::vector<DATA_T> neighbor_vals;
-      for (auto nidx : neighbor_inds) {
+
+      // neighbor values for interpolation
+      for (auto nidx : neighbor_indices) {
         neighbor_vals.push_back(data_in[nidx]);
       }
+      std::cout << "REQUEST: " << num_nearest_neighbors << " neighbors at " << max_dist << " radius.\n"
+                << "RECEIVED: " << neighbor_vals.size() << "neighbors"
+                ;
+
       T val = interp_fun(loc, neighbor_locs, neighbor_vals, max_dist);
       gridded(i,j) = val;
     }
