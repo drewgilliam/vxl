@@ -13,6 +13,7 @@
 #include <algorithm>
 #include <utility>
 #include <memory>
+#include <stdexcept>
 #include <bnabo/bnabo.h>
 #include <vgl/vgl_point_2d.h>
 #ifdef _MSC_VER
@@ -26,20 +27,39 @@ public:
   //: Construct from set of points
   bvgl_k_nearest_neighbors_2d(std::vector<vgl_point_2d<Type> > const &ptset, Type tolerance = Type(0));
 
+  //: check class validity
+  bool is_valid() const;
+
   //: query for the closest point (k = 1) including self
   bool closest_point(vgl_point_2d<Type> const& p, vgl_point_2d<Type>& cp) const;
 
   //: query for the index in the pointset with the closest point including self
   bool closest_index(vgl_point_2d<Type> const& p, unsigned& index) const;
 
-  //: find k nearest neighbors.
-  bool knn(vgl_point_2d<Type> const& p, unsigned k, std::vector<vgl_point_2d<Type>>& neighbors) const;
+  //: find the indices of the k closest neighbors (limited by max_dist)
+  bool knn_indices(
+      vgl_point_2d<Type> const& p,
+      unsigned k,
+      std::vector<unsigned> &neighbor_indices,
+      Type max_dist = std::numeric_limits<Type>::infinity()
+      ) const;
+
+  //: find k nearest neighbors
+  bool knn(
+      vgl_point_2d<Type> const& p,
+      unsigned k,
+      std::vector<vgl_point_2d<Type>>& neighbor_locs,
+      Type max_dist = std::numeric_limits<Type>::infinity()
+      ) const;
 
   //: find k nearest neighbors and indices
-  bool knn(vgl_point_2d<Type> const& p, unsigned k, std::vector<vgl_point_2d<Type>>& neighbors, vnl_vector<int> &indices) const;
-
-  //: find the indices of the k closest neighbors.
-  bool knn_indices(vgl_point_2d<Type> const& p, unsigned k, vnl_vector<int> &indices) const;
+  bool knn(
+      vgl_point_2d<Type> const& p,
+      unsigned k,
+      std::vector<vgl_point_2d<Type>>& neighbor_locs,
+      std::vector<unsigned>& neighbor_indices,
+      Type max_dist = std::numeric_limits<Type>::infinity()
+      ) const;
 
 protected:
   //: creates and populates the underlying data structure
@@ -74,53 +94,94 @@ bool bvgl_k_nearest_neighbors_2d<Type>::create(){
 
 
 template <class Type>
-bvgl_k_nearest_neighbors_2d<Type>::bvgl_k_nearest_neighbors_2d(std::vector<vgl_point_2d<Type>> const& ptset, Type tolerance):
-tolerance_(tolerance),
-ptset_(ptset)
+bvgl_k_nearest_neighbors_2d<Type>::bvgl_k_nearest_neighbors_2d(
+    std::vector<vgl_point_2d<Type>> const& ptset,
+    Type tolerance):
+  tolerance_(tolerance),
+  ptset_(ptset)
 {
   create();
 }
 
-
 template <class Type>
-bool bvgl_k_nearest_neighbors_2d<Type>::knn_indices(vgl_point_2d<Type> const& p, unsigned k, vnl_vector<int> &indices) const
+bool bvgl_k_nearest_neighbors_2d<Type>::is_valid() const
 {
-  indices.set_size(k);
-  vnl_vector<Type> q(2), dists2(k);
-  q[0]=p.x();
-  q[1]=p.y();
+  if(!search_tree_)
+    return false;
+  else
+    return true;
+}
+
+// main workhorse function:
+// discover k-nearest neighbors to point p within max_dist radius
+template <class Type>
+bool bvgl_k_nearest_neighbors_2d<Type>::knn_indices(
+    vgl_point_2d<Type> const& p,
+    unsigned k,
+    std::vector<unsigned> &neighbor_indices,
+    Type max_dist
+    ) const
+{
+  // clear output
+  neighbor_indices.clear();
+
+  // check search tree validity
   if(!search_tree_) {
     return false;
   }
-  search_tree_->knn(q, indices, dists2, k, tolerance_, flags_);
-  if(dists2[k-1] == std::numeric_limits<Type>::infinity()||indices[k-1]<0) {
-    return false;
-  }
-  return true;
-}
 
-
-template <class Type>
-bool bvgl_k_nearest_neighbors_2d<Type>::closest_index(vgl_point_2d<Type> const& p, unsigned& index) const{
-  unsigned k = 1;
-  vnl_vector<int> indices(k);
+  // variable init
   vnl_vector<Type> q(2), dists2(k);
+  vnl_vector<int> indices(k);
   q[0]=p.x();
   q[1]=p.y();
-  if(!search_tree_)
+
+  // search
+  search_tree_->knn(q, indices, dists2, k, tolerance_, flags_, max_dist);
+
+  // gather output
+  for (unsigned i = 0; i < k; ++i) {
+
+    // infinite distance or invalid index == no more neighbors found
+    // if max_dist is finite, fewer than k neighbors is fine
+    // if max_dist is infinite, fewer than k neighbors is unexpected
+    if(dists2[i] == std::numeric_limits<Type>::infinity() || indices[i]<0) {
+      if (std::isfinite(max_dist)) {
+        break;
+      } else {
+        neighbor_indices.clear();
+        return false;
+      }
+    }
+
+    // add valid index to list
+    neighbor_indices.push_back(static_cast<unsigned>(indices[i]));
+  }
+}
+
+
+template <class Type>
+bool bvgl_k_nearest_neighbors_2d<Type>::closest_index(
+    vgl_point_2d<Type> const& p,
+    unsigned& ci
+    ) const
+{
+  std::vector<unsigned> indices;
+  if (!this->knn_indices(p, 1, indices))
     return false;
-  search_tree_->knn(q, indices,dists2, k, tolerance_, flags_);
-  if(dists2[0] == std::numeric_limits<Type>::infinity()||indices[0]<0)
-    return false;
-  index = static_cast<unsigned>(indices[0]);
+  ci = indices[0];
   return true;
 }
 
 
 template <class Type>
-bool bvgl_k_nearest_neighbors_2d<Type>::closest_point(vgl_point_2d<Type> const& p, vgl_point_2d<Type>& cp) const{
-  unsigned index=0;
-  if(!this->closest_index(p, index))
+bool bvgl_k_nearest_neighbors_2d<Type>::closest_point(
+    vgl_point_2d<Type> const& p,
+    vgl_point_2d<Type>& cp
+    ) const
+{
+  unsigned index = 0;
+  if (!this->closest_index(p, index))
     return false;
   cp = ptset_[index];
   return true;
@@ -128,29 +189,32 @@ bool bvgl_k_nearest_neighbors_2d<Type>::closest_point(vgl_point_2d<Type> const& 
 
 
 template <class Type>
-bool bvgl_k_nearest_neighbors_2d<Type>::knn(vgl_point_2d<Type> const& p, unsigned k, std::vector<vgl_point_2d<Type>>& neighbors) const{
-  vnl_vector<int> indices(k);
-  return knn(p, k, neighbors, indices);
+bool bvgl_k_nearest_neighbors_2d<Type>::knn(
+    vgl_point_2d<Type> const& p,
+    unsigned k,
+    std::vector<vgl_point_2d<Type>>& neighbor_locs,
+    Type max_dist
+    ) const
+{
+  std::vector<unsigned> neighbor_indices;
+  return this->knn(p, k, neighbor_locs, neighbor_indices, max_dist);
 }
 
 
 template <class Type>
-inline bool bvgl_k_nearest_neighbors_2d<Type>::knn(vgl_point_2d<Type> const& p, unsigned k, std::vector<vgl_point_2d<Type>>& neighbors, vnl_vector<int> &indices) const {
-  neighbors.clear();
-  vnl_vector<Type> q(2), dists2(k);
-  q[0]=p.x();
-  q[1]=p.y();
-  if(!search_tree_) {
+bool bvgl_k_nearest_neighbors_2d<Type>::knn(
+    vgl_point_2d<Type> const& p,
+    unsigned k,
+    std::vector<vgl_point_2d<Type>>& neighbor_locs,
+    std::vector<unsigned>& neighbor_indices,
+    Type max_dist
+    ) const
+{
+  neighbor_locs.clear();
+  if (!this->knn_indices(p, k, neighbor_indices, max_dist))
     return false;
-  }
-  search_tree_->knn(q, indices, dists2, k, tolerance_, flags_);
-  for(unsigned i = 0; i<k; ++i){
-    if(dists2[i] == std::numeric_limits<Type>::infinity()||indices[i]<0) {
-      return false;
-    }
-    unsigned indx = static_cast<unsigned>(indices[i]);
-    neighbors.push_back(ptset_[indx]);
-  }
+  for(auto i : neighbor_indices)
+    neighbor_locs.push_back(ptset_[i]);
   return true;
 }
 
