@@ -34,9 +34,11 @@ class base_interp
  public:
 
   // constructors
+  base_interp() = default;
+
   base_interp(
-      DATA_T invalid_val = DATA_T(NAN),
-      T dist_eps = 1e-3) :
+      DATA_T invalid_val,
+      T dist_eps) :
     invalid_val_(invalid_val),
     dist_eps_(dist_eps)
   {}
