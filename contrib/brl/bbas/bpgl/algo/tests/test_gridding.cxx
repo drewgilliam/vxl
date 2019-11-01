@@ -34,7 +34,7 @@ void test_simple()
   vgl_point_2d<T> upper_left(0.0f, 0.0f);
   size_t ni = 8, nj = 8;
   T step_size = 1.0;
-  unsigned num_neighbors = 25;
+  unsigned num_neighbors = 5;
   T max_dist = 15.0f;
 
   bpgl_gridding::linear_interp<T, float> interp_fun;
@@ -89,7 +89,7 @@ void test_degenerate()
   vgl_point_2d<T> upper_left(0.0f, 0.0f);
   size_t ni = 6, nj = 6;
   T step_size = 1.0;
-  unsigned num_neighbors = 25;
+  unsigned num_neighbors = 3;
   T max_dist = 15.0f;
 
   bpgl_gridding::linear_interp<T, float> interp_fun;
