@@ -165,19 +165,22 @@ class linear_interp : public base_interp<T, DATA_T>
         if (dist < this->dist_eps_) {
           dist = this->dist_eps_;
         }
-        num_valid_neighbors++;
-        X.emplace_back(static_cast<double>(neighbor_locs[i].x()));
-        Y.emplace_back(static_cast<double>(neighbor_locs[i].y()));
-        V.emplace_back(static_cast<double>(neighbor_vals[i]));
 
-        // modified shepard's method
+        // neighbor weight
+        double dist_d = static_cast<double>(dist);
+        double weight = 1.0 / dist_d;
+
+        // // alternative: modified shepard's method
         // weight = ((max(0,R-d)/(R*d))^2
         // T weight = (max_dist - dist) / (max_dist * dist);
         // weight *= weight;
 
-        double dist_d = static_cast<double>(dist);
-        double weight = 1.0 / dist;
+        // save to internal storage
+        X.emplace_back(static_cast<double>(neighbor_locs[i].x()));
+        Y.emplace_back(static_cast<double>(neighbor_locs[i].y()));
+        V.emplace_back(static_cast<double>(neighbor_vals[i]));
         W.emplace_back(weight);
+        num_valid_neighbors++;
       }
     }
 
@@ -185,6 +188,12 @@ class linear_interp : public base_interp<T, DATA_T>
     if (num_valid_neighbors < 3) {
       // std::cerr << "insufficent neighbors" << std::endl;
       return this->invalid_val_;
+    }
+
+    // normalize weights such that max weight = 1.0
+    double weight_norm = *std::max_element(W.begin(), W.end());
+    for (auto& w : W) {
+      w /= weight_norm;
     }
 
     // absolute interpolation: origin at 0
@@ -196,24 +205,6 @@ class linear_interp : public base_interp<T, DATA_T>
       y_origin = std::accumulate(Y.begin(), Y.end(), 0.0) / len;
       v_origin = std::accumulate(V.begin(), V.end(), 0.0) / len;
     }
-
-    std::cout << "weights: ";
-    for (auto w : W)
-      std::cout << w << ",";
-    std::cout << "\n";
-
-    // normalize weight so max weight = 1.0
-    // this avoids floating point overflow for large weights
-    double weight_norm = *std::max_element(W.begin(), W.end());
-    std::cout << "weight_norm = " << weight_norm << "\n";
-    for (auto& w : W) {
-      w /= weight_norm;
-    }
-
-    std::cout << "normalized weights: ";
-    for (auto w : W)
-      std::cout << w << ",";
-    std::cout << "\n";
 
     // system matrices
     vnl_matrix<double> A(num_valid_neighbors,3);
@@ -253,7 +244,7 @@ class linear_interp : public base_interp<T, DATA_T>
     // cast as data type
     DATA_T value_return = static_cast<DATA_T>(value);
 
-    std::cout << "matrix condition =" << rcond << "\n"
+    std::cout << "rcond = " << rcond << "\n"
               << "A =\n" << A << "\n"
               << "AtA_reg=\n" << AtA_reg << "\n"
               << "inv_AtA_reg =\n" << inv_AtA_reg.as_matrix() << "\n"
@@ -263,13 +254,20 @@ class linear_interp : public base_interp<T, DATA_T>
               << "value_return = " << value_return << "\n"
               ;
 
+    std::cout << "weight_norm = " << weight_norm << "\n";
+
+    std::cout <<"normalized weights: ";
+    for (auto w : W)
+      std::cout << w << ",";
+    std::cout << "\n";
+
     return value_return;
   }
 
  private:
 
   // parameters with defaults
-  double regularization_lambda_ = 1e-3;
+  double regularization_lambda_ = 1e-6;
   double rcond_thresh_ = -1.0; // disabled by default
   bool relative_interp_ = true;
 
@@ -345,9 +343,6 @@ grid_data_2d(std::vector<vgl_point_2d<T>> const& data_in_loc,
       for (auto nidx : neighbor_indices) {
         neighbor_vals.push_back(data_in[nidx]);
       }
-      std::cout << "REQUEST: " << min_neighbors << "-" << max_neighbors << " neighbors at " << max_dist << " radius.\n"
-                << "RECEIVED: " << neighbor_vals.size() << " neighbors\n"
-                ;
 
       // interpolate
       T val = interp_fun(loc, neighbor_locs, neighbor_vals, max_dist);
