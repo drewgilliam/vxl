@@ -65,7 +65,7 @@ class base_interp
 
   // parameters with defaults
   DATA_T invalid_val_ = DATA_T(NAN);
-  T dist_eps_ = 1e-3;
+  T dist_eps_ = 1e-4;
 
 };
 
@@ -162,7 +162,6 @@ class linear_interp : public base_interp<T, DATA_T>
 
     for (unsigned i=0; i<num_neighbors; ++i) {
       T dist = (neighbor_locs[i] - interp_loc).length();
-      std::cout << "dist = " << dist << " at max_dist = " << max_dist << "\n";
       if (dist <= max_dist) {
         if (dist < this->dist_eps_) {
           dist = this->dist_eps_;
@@ -246,6 +245,7 @@ class linear_interp : public base_interp<T, DATA_T>
     // cast as data type
     DATA_T value_return = static_cast<DATA_T>(value);
 
+#if 1
     std::cout << "rcond = " << rcond << "\n"
               << "A =\n" << A << "\n"
               << "AtA_reg=\n" << AtA_reg << "\n"
@@ -262,6 +262,7 @@ class linear_interp : public base_interp<T, DATA_T>
     for (auto w : W)
       std::cout << w << ",";
     std::cout << "\n";
+#endif
 
     return value_return;
   }
@@ -269,7 +270,7 @@ class linear_interp : public base_interp<T, DATA_T>
  private:
 
   // parameters with defaults
-  double regularization_lambda_ = 1e-6;
+  double regularization_lambda_ = 1e-4;
   double rcond_thresh_ = -1.0; // disabled by default
   bool relative_interp_ = true;
 
