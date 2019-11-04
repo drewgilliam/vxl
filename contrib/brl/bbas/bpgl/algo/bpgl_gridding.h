@@ -324,18 +324,48 @@ class linear_interp : public base_interp<T, DATA_T>
 };
 
 
+
+// template<class T, class DATA_T>
+// vil_image_view<DATA_T>
+// grid_data_2d(
+//     base_interp<T, DATA_T> const& interp_fun,
+//     std::vector<vgl_point_2d<T>> const& data_in_loc,
+//     std::vector<DATA_T> const& data_in,
+//     vgl_point_2d<T> out_upper_left,
+//     size_t out_ni, size_t out_nj,
+//     T step_size,
+//     unsigned min_neighbors = 3,
+//     unsigned max_neighbors = 5,
+//     T max_dist = vnl_numeric_traits<T>::maxval,
+//     double out_theta_radians = 0.0)
+// {
+//   switch (interp_fun.type()) {
+//     case (INVERSE_DISTANCE):
+//       auto *interp_fun_ptr = static_cast<const inverse_distance_interp<T, DATA_T>*>(&interp_fun);
+//       return grid_data_2d_subfunc(interp_fun_ptr);
+//       break;
+//     case (LINEAR):
+//       auto *interp_fun_ptr = static_cast<const linear_interp<T, DATA_T>*>(&interp_fun);
+//       return grid_data_2d_subfunc(interp_fun_ptr);
+//       break;
+//   }
+// }
+
+
+
 template<class T, class DATA_T>
 vil_image_view<DATA_T>
-grid_data_2d(std::vector<vgl_point_2d<T>> const& data_in_loc,
-             std::vector<DATA_T> const& data_in,
-             vgl_point_2d<T> out_upper_left,
-             size_t out_ni, size_t out_nj,
-             T step_size,
-             base_interp<T, DATA_T> const& interp_fun,
-             unsigned min_neighbors = 3,
-             unsigned max_neighbors = 5,
-             T max_dist = vnl_numeric_traits<T>::maxval,
-             double out_theta_radians = 0.0)
+grid_data_2d(
+    std::vector<vgl_point_2d<T>> const& data_in_loc,
+    std::vector<DATA_T> const& data_in,
+    vgl_point_2d<T> out_upper_left,
+    size_t out_ni, size_t out_nj,
+    T step_size,
+    base_interp<T, DATA_T> const& interp_fun,
+    unsigned min_neighbors = 3,
+    unsigned max_neighbors = 5,
+    T max_dist = vnl_numeric_traits<T>::maxval,
+    double out_theta_radians = 0.0)
 {
   // total number of points
   size_t npts = data_in_loc.size();
@@ -394,13 +424,40 @@ grid_data_2d(std::vector<vgl_point_2d<T>> const& data_in_loc,
         neighbor_vals.push_back(data_in[nidx]);
       }
 
-      // interpolate
+      // interpolate via non-virtual method
       T val = interp_fun(loc, neighbor_locs, neighbor_vals, max_dist);
       gridded(i,j) = val;
     }
   }
   return gridded;
 }
+
+
+// template<class T, class DATA_T, typename ... Args>
+// vil_image_view<DATA_T>
+// grid_data_2d(
+//   linear_interp<T, DATA_T> const& interp_fun,
+//   Args&& ... args)
+// {
+
+// }
+
+//   std::vector<vgl_point_2d<T>> const& data_in_loc,
+//              std::vector<DATA_T> const& data_in,
+//              vgl_point_2d<T> out_upper_left,
+//              size_t out_ni, size_t out_nj,
+//              T step_size,
+             
+//              unsigned min_neighbors = 3,
+//              unsigned max_neighbors = 5,
+//              T max_dist = vnl_numeric_traits<T>::maxval,
+//              double out_theta_radians = 0.0)
+// {
+//   return grid_data_2d<T, DATA_T, linear_interp<T, DATA_T>
+
+// }
+
+
 
 template<class pointT, class pixelT>
 void pointset_from_grid(vil_image_view<pixelT> const& grid,
