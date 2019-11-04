@@ -106,6 +106,7 @@ void test_degenerate()
   TEST("gridded values correct", all_good, true);
 }
 
+
 void test_interp_real()
 {
   // A test case derived from a real example giving unexpected results
@@ -120,15 +121,37 @@ void test_interp_real()
 
   vgl_point_2d<double> test_point(9, 151.999);
   double value = interp_fun(test_point, ctrl_pts, values);
-
   TEST_NEAR("interpolated value in correct range", value, 47.0, 1.0);
 }
+
+
+void test_interp_real_origin()
+{
+  // A test case derived from a real example giving unexpected results
+  // interpolation points centered near origin
+  std::vector<vgl_point_2d<double>> ctrl_pts;
+  ctrl_pts.emplace_back(1.35039, 0.517);
+  ctrl_pts.emplace_back(0.93042, 0.390);
+  ctrl_pts.emplace_back(0.57767, 0.285);
+
+  std::vector<double> values = { 47.7940, 46.3976, 47.7940 };
+
+  bpgl_gridding::linear_interp<double, double> interp_fun;
+
+  vgl_point_2d<double> test_point(1, 0.999);
+  double value = interp_fun(test_point, ctrl_pts, values);
+  TEST_NEAR("interpolated value in correct range", value, 47.0, 1.0);
+}
+
+
+
 
 static void test_gridding()
 {
   test_simple();
   test_degenerate();
   test_interp_real();
+  test_interp_real_origin();
 }
 
 TESTMAIN(test_gridding);
