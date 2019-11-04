@@ -25,6 +25,10 @@ namespace bpgl_gridding
 {
 
 
+//: Interpolation type identifiers
+enum INTERP_TYPE { INVERSE_DISTANCE, LINEAR };
+
+
 //: Interpolation abstract class
 // invalid_val: Value to return when interpolation is not appropriate
 // dist_eps: The smallest meaningful distance of input points. Must be > 0.
@@ -51,7 +55,7 @@ class base_interp
   void dist_eps(T x) { dist_eps_ = x; }
 
   // typename
-  virtual std::string type() const = 0;
+  virtual INTERP_TYPE type() const = 0;
 
   // interpolation operator
   virtual DATA_T operator() (
@@ -88,10 +92,21 @@ class inverse_distance_interp : public base_interp<T, DATA_T>
   using base_interp<T, DATA_T>::base_interp;
 
   // typename
-  std::string type() const override { return "inverse_distance_interp"; }
+  INTERP_TYPE type() const override { return INVERSE_DISTANCE; }
 
   // interpolation operator
   DATA_T operator() (
+      vgl_point_2d<T> interp_loc,
+      std::vector<vgl_point_2d<T> > const& neighbor_locs,
+      std::vector<DATA_T> const& neighbor_vals,
+      T max_dist = vnl_numeric_traits<T>::maxval
+      ) const override
+  {
+    return this->interp(interp_loc, neighbor_locs, neighbor_vals, max_dist);
+  }
+
+  // interpolation function - non virtual for optimized performance
+  DATA_T interp(
       vgl_point_2d<T> interp_loc,
       std::vector<vgl_point_2d<T> > const& neighbor_locs,
       std::vector<DATA_T> const& neighbor_vals,
@@ -141,7 +156,7 @@ class linear_interp : public base_interp<T, DATA_T>
   using base_interp<T, DATA_T>::base_interp;
 
   // typename
-  std::string type() const override { return "linear_interp"; }
+  INTERP_TYPE type() const override { return LINEAR; }
 
   // accessors
   double dist_iexp() const { return dist_iexp_; }
@@ -162,9 +177,9 @@ class linear_interp : public base_interp<T, DATA_T>
       std::vector<vgl_point_2d<T> > const& neighbor_locs,
       std::vector<DATA_T> const& neighbor_vals,
       T max_dist = vnl_numeric_traits<T>::maxval
-      ) const
+      ) const override
   {
-    return util(interp_loc, neighbor_locs, neighbor_vals, max_dist);
+    return this->interp(interp_loc, neighbor_locs, neighbor_vals, max_dist);
   }
 
   // non-virtual function
@@ -175,11 +190,11 @@ class linear_interp : public base_interp<T, DATA_T>
       T max_dist = vnl_numeric_traits<T>::maxval
       ) const
   {
-    return util(interp_loc, neighbor_locs, neighbor_vals, max_dist);
+    return this->interp(interp_loc, neighbor_locs, neighbor_vals, max_dist);
   }
 
-
-  DATA_T util (
+  // interpolation function - non virtual for optimized performance
+  DATA_T interp (
       vgl_point_2d<T> interp_loc,
       std::vector<vgl_point_2d<T> > const& neighbor_locs,
       std::vector<DATA_T> const& neighbor_vals,
