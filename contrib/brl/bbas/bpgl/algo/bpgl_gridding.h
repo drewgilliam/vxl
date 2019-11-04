@@ -126,7 +126,7 @@ class inverse_distance_interp : public base_interp<T, DATA_T>
 // accuracy of the final result.  Only on output is the resulting
 // interpolated value cast back to DATA_T
 template<class T, class DATA_T>
-class linear_interp : public base_interp<T, DATA_T>
+class linear_interp final : public base_interp<T, DATA_T>
 {
  public:
 
@@ -151,6 +151,28 @@ class linear_interp : public base_interp<T, DATA_T>
 
   // interpolation operator
   DATA_T operator() (
+      vgl_point_2d<T> interp_loc,
+      std::vector<vgl_point_2d<T> > const& neighbor_locs,
+      std::vector<DATA_T> const& neighbor_vals,
+      T max_dist = vnl_numeric_traits<T>::maxval
+      ) const
+  {
+    return util(interp_loc, neighbor_locs, neighbor_vals, max_dist);
+  }
+
+  // non-virtual function
+  DATA_T non_virtual (
+      vgl_point_2d<T> interp_loc,
+      std::vector<vgl_point_2d<T> > const& neighbor_locs,
+      std::vector<DATA_T> const& neighbor_vals,
+      T max_dist = vnl_numeric_traits<T>::maxval
+      ) const
+  {
+    return util(interp_loc, neighbor_locs, neighbor_vals, max_dist);
+  }
+
+
+  DATA_T util (
       vgl_point_2d<T> interp_loc,
       std::vector<vgl_point_2d<T> > const& neighbor_locs,
       std::vector<DATA_T> const& neighbor_vals,

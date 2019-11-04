@@ -152,6 +152,9 @@ void test_interp_real_origin()
 #include <vul/vul_timer.h>
 static void test_interp_timing(unsigned long num_iter)
 {
+  double value = 0.0;
+  vul_timer timer;
+
   std::vector<vgl_point_2d<double>> ctrl_pts;
   ctrl_pts.emplace_back(9.35039, 151.517);
   ctrl_pts.emplace_back(8.93042, 151.390);
@@ -163,16 +166,24 @@ static void test_interp_timing(unsigned long num_iter)
 
   vgl_point_2d<double> test_point(9, 151.999);
 
-  double value = 0.0;
-  vul_timer timer;
+  timer.mark();
   for (unsigned i = 0; i < num_iter; i++)
     value = interp_fun(test_point, ctrl_pts, values);
-  double time = timer.real();
+  double operator_sec = timer.real() / 1000.0;
 
-  std::cout << "Timing report:\n"
+  timer.mark();
+  for (unsigned i = 0; i < num_iter; i++)
+    value = interp_fun.non_virtual(test_point, ctrl_pts, values);
+  double non_virtual_sec = timer.real() / 1000.0;
+
+  std::cout << "---Timing report---\n"
             << "Interpolate " << ctrl_pts.size() << " points for " << num_iter << " iterations\n"
-            << "total time = " << time / 1000.0 << " sec.\n"
-            << "per-operation time = " << time / double(num_iter) / 1000.0 << " sec.\n"
+            << "operator()\n"
+            << "  total time = " << operator_sec << " sec.\n"
+            << "  per-operation time = " << operator_sec / double(num_iter) << " sec.\n"
+            << "non-virtual function\n"
+            << "  total time = " << non_virtual_sec / 1000.0 << " sec.\n"
+            << "  per-operation time = " << non_virtual_sec / double(num_iter) << " sec.\n"
             ;
 }
 #endif
@@ -187,7 +198,7 @@ static void test_gridding()
 
   // timing report
 #if BPGL_TIMING
-  test_interp_timing(10000);
+  test_interp_timing(100000);
 #endif
 }
 
