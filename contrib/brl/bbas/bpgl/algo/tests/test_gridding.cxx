@@ -159,6 +159,7 @@ void test_interp_timing_subfunc(
     bpgl_gridding::base_interp<double, double> const& interp_fun_base,
     unsigned long num_iter)
 {
+  double value = 0.0;
   timer.mark();
   for (unsigned i = 0; i < num_iter; i++)
     value = interp_fun_base(test_point, ctrl_pts, values);
@@ -174,6 +175,7 @@ void test_interp_timing_cast(
     bpgl_gridding::base_interp<double, double> const& interp_fun_base,
     unsigned long num_iter)
 {
+  double value = 0.0;
   const auto *interp_fun = static_cast<const bpgl_gridding::linear_interp<double, double> *>(&interp_fun_base);
 
   timer.mark();
