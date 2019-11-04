@@ -156,7 +156,7 @@ void test_interp_timing_subfunc(
     std::vector<vgl_point_2d<double>> const& ctrl_pts,
     std::vector<double> const& values,
     vgl_point_2d<double> const& test_point,
-    base_interp<T, DATA_T> const& interp_fun_base,
+    bpgl_gridding::base_interp<double, double> const& interp_fun_base,
     unsigned long num_iter)
 {
   timer.mark();
@@ -165,12 +165,13 @@ void test_interp_timing_subfunc(
   return timer.real() / 1000.0;
 }
 
+
 void test_interp_timing_cast(
     vul_timer timer,
     std::vector<vgl_point_2d<double>> const& ctrl_pts,
     std::vector<double> const& values,
     vgl_point_2d<double> const& test_point,
-    base_interp<T, DATA_T> const& interp_fun_base,
+    bpgl_gridding::base_interp<double, double> const& interp_fun_base,
     unsigned long num_iter)
 {
   const auto *interp_fun = static_cast<const bpgl_gridding::linear_interp<double, double> *>(&interp_fun_base);

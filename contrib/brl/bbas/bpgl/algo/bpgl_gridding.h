@@ -63,6 +63,13 @@ class base_interp
 
  protected:
 
+  // // Convenience method for CRTP
+  // template<class DERIVED>
+  // DERIVED& derived() const
+  // {
+  //   return *static_cast<DERIVED*>(this);
+  // }
+
   // parameters with defaults
   DATA_T invalid_val_ = DATA_T(NAN);
   T dist_eps_ = 1e-5;
