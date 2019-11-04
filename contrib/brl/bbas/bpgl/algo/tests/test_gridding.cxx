@@ -167,22 +167,22 @@ void test_interp_timing_subfunc(
 }
 
 
-void test_interp_timing_cast(
-    vul_timer& timer,
-    std::vector<vgl_point_2d<double>> const& ctrl_pts,
-    std::vector<double> const& values,
-    vgl_point_2d<double> const& test_point,
-    bpgl_gridding::base_interp<double, double> const& interp_fun_base,
-    unsigned long num_iter)
-{
-  double value = 0.0;
-  const auto *interp_fun = static_cast<const bpgl_gridding::linear_interp<double, double> *>(&interp_fun_base);
+// void test_interp_timing_cast(
+//     vul_timer& timer,
+//     std::vector<vgl_point_2d<double>> const& ctrl_pts,
+//     std::vector<double> const& values,
+//     vgl_point_2d<double> const& test_point,
+//     bpgl_gridding::base_interp<double, double> const& interp_fun_base,
+//     unsigned long num_iter)
+// {
+//   double value = 0.0;
+//   const auto *interp_fun = static_cast<const bpgl_gridding::linear_interp<double, double> *>(&interp_fun_base);
 
-  timer.mark();
-  for (unsigned i = 0; i < num_iter; i++)
-    value = interp_fun.non_virtual(test_point, ctrl_pts, values);
-  return timer.real() / 1000.0;
-}
+//   timer.mark();
+//   for (unsigned i = 0; i < num_iter; i++)
+//     value = interp_fun.non_virtual(test_point, ctrl_pts, values);
+//   return timer.real() / 1000.0;
+// }
 
 
 void test_inter_timing(unsigned long num_iter)
@@ -214,8 +214,8 @@ void test_inter_timing(unsigned long num_iter)
   double base_interp = test_interp_timing_subfunc(timer, ctrl_pts,
     values, test_point, interp_fun, num_iter);
 
-  double cast_interp = test_interp_timing_cast(timer, ctrl_pts,
-    values, test_point, interp_fun, num_iter);
+  // double cast_interp = test_interp_timing_cast(timer, ctrl_pts,
+  //   values, test_point, interp_fun, num_iter);
 
   std::cout << "---Timing report---\n"
             << "Interpolate " << ctrl_pts.size() << " points for " << num_iter << " iterations\n"
@@ -232,8 +232,6 @@ void test_inter_timing(unsigned long num_iter)
             << "  total time = " << cast_interp << " sec.\n"
             << "  per-operation time = " << cast_interp / double(num_iter) << " sec.\n"
             ;
-
-  test_interp_timing_subfunc(interp_fun, num_iter);
 }
 
 
