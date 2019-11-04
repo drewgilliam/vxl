@@ -152,7 +152,7 @@ void test_interp_real_origin()
 #include <vul/vul_timer.h>
 
 void test_interp_timing_subfunc(
-    vul_timer timer,
+    vul_timer& timer,
     std::vector<vgl_point_2d<double>> const& ctrl_pts,
     std::vector<double> const& values,
     vgl_point_2d<double> const& test_point,
@@ -168,7 +168,7 @@ void test_interp_timing_subfunc(
 
 
 void test_interp_timing_cast(
-    vul_timer timer,
+    vul_timer& timer,
     std::vector<vgl_point_2d<double>> const& ctrl_pts,
     std::vector<double> const& values,
     vgl_point_2d<double> const& test_point,
