@@ -11,6 +11,7 @@
 #include <iostream>
 #include <stdexcept>
 #include <vector>
+#include <numeric>
 #include <bvgl/bvgl_k_nearest_neighbors_2d.h>
 #include <vnl/vnl_numeric_traits.h>
 #include <vnl/algo/vnl_matrix_inverse.h>
@@ -118,6 +119,8 @@ class inverse_distance_interp : public base_interp<T, DATA_T>
 // regularization_lambda: Larger regularization values will bias the solution
 //    towards "flatter" functions.  Very large values will result in weighted
 //    averages of neighbor values.
+// rcond_thresh: Threshold for inverse matrix conditioning. Must be > 0
+// relative_interp: interpolation relative to neighbor centroids
 //
 // Note: internals are represented at double precision to ensure
 // accuracy of the final result.  Only on output is the resulting
@@ -136,6 +139,12 @@ class linear_interp : public base_interp<T, DATA_T>
   // accessors
   double regularization_lambda() const { return regularization_lambda_; }
   void regularization_lambda(double x) { regularization_lambda_ = x; }
+
+  double rcond_thresh() const { return rcond_thresh_; }
+  void rcond_thresh(double x) { rcond_thresh_ = x; }
+
+  bool relative_interp() const { return relative_interp_; }
+  void relative_interp(bool x) { relative_interp_ = x; }
 
   // interpolation operator
   DATA_T operator() (
@@ -177,14 +186,30 @@ class linear_interp : public base_interp<T, DATA_T>
       return this->invalid_val_;
     }
 
+    // // normalize weights such that max weight = 1.0
+    // double weight_norm = *std::max_element(W.begin(), W.end());
+    // for (auto& w : W) {
+    //   w /= weight_norm;
+    // }
+
+    // absolute interpolation: origin at 0
+    // relative interpolation: origin at neighbor loc/val centroid
+    double x_origin = 0, y_origin = 0, v_origin = 0;
+    if (relative_interp_) {
+      double len = static_cast<double>(num_valid_neighbors);
+      x_origin = std::accumulate(X.begin(), X.end(), 0.0) / len;
+      y_origin = std::accumulate(Y.begin(), Y.end(), 0.0) / len;
+      v_origin = std::accumulate(V.begin(), V.end(), 0.0) / len;
+    }
+
     // system matrices
     vnl_matrix<double> A(num_valid_neighbors,3);
     vnl_vector<double> b(num_valid_neighbors);
     for (unsigned i=0; i<num_valid_neighbors; ++i) {
-      A[i][0] = W[i] * X[i];
-      A[i][1] = W[i] * Y[i];
+      A[i][0] = W[i] * (X[i] - x_origin);
+      A[i][1] = W[i] * (Y[i] - y_origin);
       A[i][2] = W[i];
-      b[i] = W[i] * V[i];
+      b[i] = W[i] * (V[i] - v_origin);
     }
 
     // employ Tikhonov Regularization to cope with degenerate point configurations
@@ -199,14 +224,44 @@ class linear_interp : public base_interp<T, DATA_T>
     vnl_matrix<double> AtA_reg = At*A + lambdaI;
     vnl_matrix_inverse<double> inv_AtA_reg(AtA_reg.as_ref());
 
+    // check reciprocal condition number
+    auto rcond = inv_AtA_reg.well_condition();
+    if (rcond < rcond_thresh_) {
+      std::cerr << "matrix has poor condition (" << rcond << ")\n" << std::endl;
+      return this->invalid_val_;
+    }
+
     // final solution
     vnl_vector<double> f = inv_AtA_reg.as_matrix() * At * b;
     double x = static_cast<double>(interp_loc.x());
     double y = static_cast<double>(interp_loc.y());
-    double value = f[0]*x + f[1]*y + f[2];
+    double value = f[0]*(x - x_origin) + f[1]*(y - y_origin) + f[2] + v_origin;
 
     // cast as data type
     DATA_T value_return = static_cast<DATA_T>(value);
+
+#if 0
+    // verbose output
+    std::cout << "interp_loc (x,y) = " << interp_loc.x() << "," << interp_loc.y() << "\n"
+              << "origin (x,y,v) = " << x_origin << "," << y_origin << "," << v_origin << "\n"
+              ;
+
+    std::cout << "weight_norm = " << weight_norm << "\n";
+    std::cout <<"normalized weights: ";
+    for (auto w : W)
+      std::cout << w << ",";
+    std::cout << "\n";
+
+    std::cout << "A =\n" << A
+              << "b =\n" << b << "\n"
+              << "AtA_reg=\n" << AtA_reg
+              << "inv_AtA_reg =\n" << inv_AtA_reg.as_matrix()
+              << "rcond = " << rcond << "\n"
+              << "value_return = " << value_return << "\n"
+              << std::endl;
+              ;
+#endif
+
     return value_return;
   }
 
@@ -214,6 +269,8 @@ class linear_interp : public base_interp<T, DATA_T>
 
   // parameters with defaults
   double regularization_lambda_ = 1e-3;
+  double rcond_thresh_ = 1e-8;
+  bool relative_interp_ = true;
 
 };
 
