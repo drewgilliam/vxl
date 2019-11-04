@@ -186,20 +186,21 @@ class linear_interp : public base_interp<T, DATA_T>
       return this->invalid_val_;
     }
 
-    // // normalize weights such that max weight = 1.0
+    // weight normalization
     // double weight_norm = *std::max_element(W.begin(), W.end());
-    // for (auto& w : W) {
-    //   w /= weight_norm;
-    // }
+    double weight_norm = std::accumulate(W.begin(), W.end(), 0.0);
+    for (auto& w : W) {
+      w /= weight_norm;
+    }
 
     // absolute interpolation: origin at 0
     // relative interpolation: origin at neighbor loc/val centroid
     double x_origin = 0, y_origin = 0, v_origin = 0;
     if (relative_interp_) {
-      double len = static_cast<double>(num_valid_neighbors);
-      x_origin = std::accumulate(X.begin(), X.end(), 0.0) / len;
-      y_origin = std::accumulate(Y.begin(), Y.end(), 0.0) / len;
-      v_origin = std::accumulate(V.begin(), V.end(), 0.0) / len;
+      double N = static_cast<double>(num_valid_neighbors);
+      x_origin = std::accumulate(X.begin(), X.end(), 0.0) / N;
+      y_origin = std::accumulate(Y.begin(), Y.end(), 0.0) / N;
+      v_origin = std::accumulate(V.begin(), V.end(), 0.0) / N;
     }
 
     // system matrices
