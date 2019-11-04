@@ -126,7 +126,7 @@ class inverse_distance_interp : public base_interp<T, DATA_T>
 // accuracy of the final result.  Only on output is the resulting
 // interpolated value cast back to DATA_T
 template<class T, class DATA_T>
-class linear_interp final : public base_interp<T, DATA_T>
+class linear_interp : public base_interp<T, DATA_T>
 {
  public:
 

@@ -150,7 +150,39 @@ void test_interp_real_origin()
 
 #if BPGL_TIMING
 #include <vul/vul_timer.h>
-static void test_interp_timing(unsigned long num_iter)
+
+void test_interp_timing_subfunc(
+    vul_timer timer,
+    std::vector<vgl_point_2d<double>> const& ctrl_pts,
+    std::vector<double> const& values,
+    vgl_point_2d<double> const& test_point,
+    base_interp<T, DATA_T> const& interp_fun_base,
+    unsigned long num_iter)
+{
+  timer.mark();
+  for (unsigned i = 0; i < num_iter; i++)
+    value = interp_fun_base(test_point, ctrl_pts, values);
+  return timer.real() / 1000.0;
+}
+
+void test_interp_timing_cast(
+    vul_timer timer,
+    std::vector<vgl_point_2d<double>> const& ctrl_pts,
+    std::vector<double> const& values,
+    vgl_point_2d<double> const& test_point,
+    base_interp<T, DATA_T> const& interp_fun_base,
+    unsigned long num_iter)
+{
+  const auto *interp_fun = static_cast<const bpgl_gridding::linear_interp<double, double> *>(&interp_fun_base);
+
+  timer.mark();
+  for (unsigned i = 0; i < num_iter; i++)
+    value = interp_fun.non_virtual(test_point, ctrl_pts, values);
+  return timer.real() / 1000.0;
+}
+
+
+void test_inter_timing(unsigned long num_iter)
 {
   double value = 0.0;
   vul_timer timer;
@@ -176,16 +208,36 @@ static void test_interp_timing(unsigned long num_iter)
     value = interp_fun.non_virtual(test_point, ctrl_pts, values);
   double non_virtual_sec = timer.real() / 1000.0;
 
+  double base_interp = test_interp_timing_subfunc(timer, ctrl_pts,
+    values, test_point, interp_fun, num_iter);
+
+  double cast_interp = test_interp_timing_cast(timer, ctrl_pts,
+    values, test_point, interp_fun, num_iter);
+
   std::cout << "---Timing report---\n"
             << "Interpolate " << ctrl_pts.size() << " points for " << num_iter << " iterations\n"
             << "operator()\n"
             << "  total time = " << operator_sec << " sec.\n"
             << "  per-operation time = " << operator_sec / double(num_iter) << " sec.\n"
             << "non-virtual function\n"
-            << "  total time = " << non_virtual_sec / 1000.0 << " sec.\n"
+            << "  total time = " << non_virtual_sec << " sec.\n"
             << "  per-operation time = " << non_virtual_sec / double(num_iter) << " sec.\n"
+            << "base.operator()\n"
+            << "  total time = " << base_interp << " sec.\n"
+            << "  per-operation time = " << base_interp / double(num_iter) << " sec.\n"
+            << "static_cast\n"
+            << "  total time = " << cast_interp << " sec.\n"
+            << "  per-operation time = " << cast_interp / double(num_iter) << " sec.\n"
             ;
+
+  test_interp_timing_subfunc(interp_fun, num_iter);
 }
+
+
+
+
+
+
 #endif
 
 
@@ -198,7 +250,7 @@ static void test_gridding()
 
   // timing report
 #if BPGL_TIMING
-  test_interp_timing(100000);
+  test_interp_timing(1000000);
 #endif
 }
 
