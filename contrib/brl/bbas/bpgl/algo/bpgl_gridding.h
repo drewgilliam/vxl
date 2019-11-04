@@ -137,6 +137,9 @@ class linear_interp : public base_interp<T, DATA_T>
   std::string type() const override { return "linear_interp"; }
 
   // accessors
+  double dist_iexp() const { return dist_iexp_; }
+  void dist_iexp(double x) { dist_iexp_ = x; }
+
   double regularization_lambda() const { return regularization_lambda_; }
   void regularization_lambda(double x) { regularization_lambda_ = x; }
 
@@ -169,7 +172,7 @@ class linear_interp : public base_interp<T, DATA_T>
 
         // neighbor weight
         double dist_d = static_cast<double>(dist);
-        double weight = 1.0 / dist_d;
+        double weight = 1.0 / std::pow(dist_d, dist_iexp_);
 
         // save to internal storage
         X.emplace_back(static_cast<double>(neighbor_locs[i].x()));
@@ -269,6 +272,7 @@ class linear_interp : public base_interp<T, DATA_T>
  private:
 
   // parameters with defaults
+  int dist_iexp_ = 2;
   double regularization_lambda_ = 1e-3;
   double rcond_thresh_ = 1e-8;
   bool relative_interp_ = true;
