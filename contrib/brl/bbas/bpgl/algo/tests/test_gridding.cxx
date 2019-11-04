@@ -144,6 +144,38 @@ void test_interp_real_origin()
 }
 
 
+#ifndef BPGL_TIMING
+#define BPGL_TIMING 1
+#endif
+
+#if BPGL_TIMING
+#include <vul/vul_timer.h>
+static void test_interp_timing(unsigned long num_iter)
+{
+  std::vector<vgl_point_2d<double>> ctrl_pts;
+  ctrl_pts.emplace_back(9.35039, 151.517);
+  ctrl_pts.emplace_back(8.93042, 151.390);
+  ctrl_pts.emplace_back(8.57767, 151.285);
+
+  std::vector<double> values = { 47.7940, 46.3976, 47.7940 };
+
+  bpgl_gridding::linear_interp<double, double> interp_fun;
+
+  vgl_point_2d<double> test_point(9, 151.999);
+
+  double value = 0.0;
+  vul_timer timer;
+  for (unsigned i = 0; i < num_iter; i++)
+    value = interp_fun(test_point, ctrl_pts, values);
+  double time = timer.real();
+
+  std::cout << "Timing report:\n"
+            << "Interpolate " << ctrl_pts.size() << " points for " << num_iter << " iterations\n"
+            << "total time = " << time / 1000.0 << " sec.\n"
+            << "per-operation time = " << time / double(num_iter) / 1000.0 << " sec.\n"
+            ;
+}
+#endif
 
 
 static void test_gridding()
@@ -152,6 +184,11 @@ static void test_gridding()
   test_degenerate();
   test_interp_real();
   test_interp_real_origin();
+
+  // timing report
+#if BPGL_TIMING
+  test_interp_timing(10000);
+#endif
 }
 
 TESTMAIN(test_gridding);
