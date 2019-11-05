@@ -71,7 +71,7 @@ class bpgl_heightmap
     void max_neighbors(unsigned x) { max_neighbors_ = x; }
 
     std::shared_ptr< bpgl_gridding::base_interp<T,T> > interp_ptr() const { return interp_ptr_; }
-    void interp_ptr(std::shared_ptr< bpgl_gridding::base_interp<T,T> >& x) { interp_ptr_ = x; }
+    void interp_ptr(std::shared_ptr< bpgl_gridding::base_interp<T,T> > x) { interp_ptr_ = x; }
 
     //: compute pointset from triangulated image
     void pointset_from_tri(

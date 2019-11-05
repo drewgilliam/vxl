@@ -20,7 +20,7 @@
 
 // Inverse distance interpolation
 template<class T, class DATA_T>
-DATA_T bpgl_gridding::inverse_distance_interp<T, DATA_T>::interp(
+DATA_T bpgl_gridding::inverse_distance_interp<T, DATA_T>::operator() (
     vgl_point_2d<T> interp_loc,
     std::vector<vgl_point_2d<T> > const& neighbor_locs,
     std::vector<DATA_T> const& neighbor_vals,
@@ -50,7 +50,7 @@ DATA_T bpgl_gridding::inverse_distance_interp<T, DATA_T>::interp(
 
 // Linear interpolation
 template<class T, class DATA_T>
-DATA_T bpgl_gridding::linear_interp<T, DATA_T>::interp(
+DATA_T bpgl_gridding::linear_interp<T, DATA_T>::operator() (
     vgl_point_2d<T> interp_loc,
     std::vector<vgl_point_2d<T> > const& neighbor_locs,
     std::vector<DATA_T> const& neighbor_vals,
@@ -147,9 +147,9 @@ DATA_T bpgl_gridding::linear_interp<T, DATA_T>::interp(
 
 
 // interpolate image from scattered locations/values
-template<class T, class DATA_T, class INTERP_T>
+template<class T, class DATA_T>
 vil_image_view<DATA_T> bpgl_gridding::grid_data_2d(
-    INTERP_T const& interp_fun,
+    base_interp<T, DATA_T> const& interp_fun,
     std::vector<vgl_point_2d<T>> const& data_in_loc,
     std::vector<DATA_T> const& data_in,
     vgl_point_2d<T> out_upper_left,
@@ -162,8 +162,6 @@ vil_image_view<DATA_T> bpgl_gridding::grid_data_2d(
     double out_theta_radians
     )
 {
-  std::cout << "---------------------------------------------------INTERP_FUN TYPE = " << interp_fun.type() << std::endl;
-
   // total number of points
   size_t npts = data_in_loc.size();
 
@@ -229,44 +227,6 @@ vil_image_view<DATA_T> bpgl_gridding::grid_data_2d(
   return gridded;
 }
 
-// // image gridding
-// // template specialization for shared_ptr<base_interp>
-// template<class T, class DATA_T>
-// vil_image_view<DATA_T>
-// grid_data_2d<T, DATA_T, std::shared_ptr<base_interp<T, DATA_T>> >(
-//     std::shared_ptr< base_interp<T, DATA_T> > const& interp_ptr,
-//     std::vector<vgl_point_2d<T>> const& data_in_loc,
-//     std::vector<DATA_T> const& data_in,
-//     vgl_point_2d<T> out_upper_left,
-//     size_t out_ni,
-//     size_t out_nj,
-//     T step_size,
-//     unsigned min_neighbors = 3,
-//     unsigned max_neighbors = 5,
-//     T max_dist = vnl_numeric_traits<T>::maxval,
-//     double out_theta_radians = 0.0)
-// {
-//   switch (interp_ptr->type()) {
-//     case INVERSE_DISTANCE: {
-//       auto inverse_distance_interp_ptr = std::dynamic_pointer_cast< inverse_distance_interp<T, DATA_T> >(interp_ptr);
-//       return grid_data_2d(
-//           *inverse_distance_interp_ptr, data_in_loc, data_in,
-//           out_upper_left, out_ni, out_nj, step_size,
-//           min_neighbors, max_neighbors, max_dist, out_theta_radians);
-//     }
-//     case LINEAR: {
-//       auto linear_interp_ptr = std::dynamic_pointer_cast< linear_interp<T, DATA_T> >(interp_ptr);
-//       return grid_data_2d(
-//           *linear_interp_ptr, data_in_loc, data_in,
-//           out_upper_left, out_ni, out_nj, step_size,
-//           min_neighbors, max_neighbors, max_dist, out_theta_radians);
-//     }
-//     default: {
-//       throw std::runtime_error("Unrecognized interpolation class")
-//     }
-//   }
-// }
-
 
 // image to 3D pointset
 template<class T, class DATA_T>
@@ -299,11 +259,13 @@ vgl_pointset_3d<T> bpgl_gridding::pointset_from_grid(
 
 
 // explicit template instantiations macros
-#undef BPGL_GRIDDING_INTERP_INSTANIATE
-#define BPGL_GRIDDING_INTERP_INSTANIATE(T, DATA_T, INTERP_T) \
-template class INTERP_T<T, DATA_T>; \
-template vil_image_view<DATA_T> grid_data_2d<T, DATA_T, INTERP_T<T, DATA_T>>( \
-    INTERP_T<T, DATA_T> const& interp_fun, \
+#undef BPGL_GRIDDING_INSTANIATE
+#define BPGL_GRIDDING_INSTANIATE(T, DATA_T) \
+namespace bpgl_gridding { \
+template class inverse_distance_interp<T, DATA_T>; \
+template class linear_interp<T, DATA_T>; \
+template vil_image_view<DATA_T> grid_data_2d<T, DATA_T>( \
+    base_interp<T, DATA_T> const& interp_fun, \
     std::vector<vgl_point_2d<T>> const& data_in_loc, \
     std::vector<DATA_T> const& data_in, \
     vgl_point_2d<T> out_upper_left, \
@@ -314,18 +276,12 @@ template vil_image_view<DATA_T> grid_data_2d<T, DATA_T, INTERP_T<T, DATA_T>>( \
     unsigned max_neighbors, \
     T max_dist, \
     double out_theta_radians \
-    )
-
-#undef BPGL_GRIDDING_INSTANIATE
-#define BPGL_GRIDDING_INSTANIATE(T, DATA_T) \
-namespace bpgl_gridding { \
-BPGL_GRIDDING_INTERP_INSTANIATE(T, DATA_T, inverse_distance_interp); \
-BPGL_GRIDDING_INTERP_INSTANIATE(T, DATA_T, linear_interp); \
+    ); \
 template vgl_pointset_3d<T> pointset_from_grid<T, DATA_T>( \
     vil_image_view<DATA_T> const& grid, \
     vgl_point_2d<T> const& upper_left, \
     T step_size, \
-    double out_theta_radians = 0.0 \
+    double out_theta_radians \
     ); \
 }
 

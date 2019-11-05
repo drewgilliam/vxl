@@ -38,6 +38,7 @@
 #include <fstream>
 #include <string>
 #include <vector>
+#include <memory>
 #include <map>
 #include <math.h>
 #include <vpgl/vpgl_affine_camera.h>
@@ -116,6 +117,10 @@ struct pairwise_params
   unsigned min_neighbors_ = 3;
   unsigned max_neighbors_ = 5;
   float neighbor_dist_factor_ = 3.0;
+
+  // gridding interpolation function (shared pointer)
+  std::shared_ptr< bpgl_gridding::base_interp<float,float> > interp_ptr_
+    { std::make_shared< bpgl_gridding::linear_interp<float,float> >() };
 
 };
 

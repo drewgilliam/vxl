@@ -20,10 +20,6 @@
 namespace bpgl_gridding
 {
 
-//: Interpolation type enumeration
-// useful for fast class discovery when presented a shared_ptr<base_interp>
-enum INTERP_TYPE {INVERSE_DISTANCE, LINEAR};
-
 
 //: Interpolation abstract class
 // invalid_val: Value to return when interpolation is not appropriate
@@ -49,9 +45,6 @@ class base_interp
 
   T dist_eps() const { return dist_eps_; }
   void dist_eps(T x) { dist_eps_ = x; }
-
-  // class identifier
-  virtual INTERP_TYPE type() const = 0;
 
   // interpolation operator
   virtual DATA_T operator() (
@@ -80,27 +73,13 @@ class inverse_distance_interp : public base_interp<T, DATA_T>
   // constructors (inherit from base_interp)
   using base_interp<T, DATA_T>::base_interp;
 
-  // class identifier
-  INTERP_TYPE type() const override { return INVERSE_DISTANCE; }
-
-  // non-virtual interpolation function
-  DATA_T interp(
-      vgl_point_2d<T> interp_loc,
-      std::vector<vgl_point_2d<T> > const& neighbor_locs,
-      std::vector<DATA_T> const& neighbor_vals,
-      T max_dist = std::numeric_limits<T>::infinity()
-      ) const;
-
   // virtual interpolation operator
   DATA_T operator() (
       vgl_point_2d<T> interp_loc,
       std::vector<vgl_point_2d<T> > const& neighbor_locs,
       std::vector<DATA_T> const& neighbor_vals,
       T max_dist = std::numeric_limits<T>::infinity()
-      ) const override
-  {
-    return this->interp(interp_loc, neighbor_locs, neighbor_vals, max_dist);
-  }
+      ) const override;
 
 };
 
@@ -125,9 +104,6 @@ class linear_interp : public base_interp<T, DATA_T>
   // constructors (inherit from base_interp)
   using base_interp<T, DATA_T>::base_interp;
 
-  // class identifier
-  INTERP_TYPE type() const override { return LINEAR; }
-
   // accessors
   int dist_iexp() const { return dist_iexp_; }
   void dist_iexp(int x) { dist_iexp_ = x; }
@@ -141,24 +117,13 @@ class linear_interp : public base_interp<T, DATA_T>
   bool relative_interp() const { return relative_interp_; }
   void relative_interp(bool x) { relative_interp_ = x; }
 
-  // non-virtual interpolation function
-  DATA_T interp(
-      vgl_point_2d<T> interp_loc,
-      std::vector<vgl_point_2d<T> > const& neighbor_locs,
-      std::vector<DATA_T> const& neighbor_vals,
-      T max_dist = std::numeric_limits<T>::infinity()
-      ) const;
-
-  // virtual interpolation operator
+  // interpolation operator
   DATA_T operator() (
       vgl_point_2d<T> interp_loc,
       std::vector<vgl_point_2d<T> > const& neighbor_locs,
       std::vector<DATA_T> const& neighbor_vals,
       T max_dist = std::numeric_limits<T>::infinity()
-      ) const override
-  {
-    return this->interp(interp_loc, neighbor_locs, neighbor_vals, max_dist);
-  }
+      ) const override;
 
  private:
 
@@ -172,10 +137,9 @@ class linear_interp : public base_interp<T, DATA_T>
 
 
 //: image interpolation from scattered locations/values
-// templated on interpolation class
-template<class T, class DATA_T, class INTERP_T>
+template<class T, class DATA_T>
 vil_image_view<DATA_T> grid_data_2d(
-    INTERP_T const& interp_fun,
+    base_interp<T, DATA_T> const& interp_fun,
     std::vector<vgl_point_2d<T>> const& data_in_loc,
     std::vector<DATA_T> const& data_in,
     vgl_point_2d<T> out_upper_left,
@@ -188,7 +152,6 @@ vil_image_view<DATA_T> grid_data_2d(
     double out_theta_radians = 0.0
     );
 
-
 // image as 3D point cloud
 template<class T, class DATA_T>
 vgl_pointset_3d<T> pointset_from_grid(
@@ -198,5 +161,7 @@ vgl_pointset_3d<T> pointset_from_grid(
     double out_theta_radians = 0.0
     );
 
-}
+
+} // end namespace bpgl_gridding
+
 #endif

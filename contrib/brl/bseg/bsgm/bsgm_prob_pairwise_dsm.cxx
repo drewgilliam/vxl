@@ -261,6 +261,7 @@ bsgm_prob_pairwise_dsm::get_bpgl_heightmap() const
   bh.min_neighbors(this->params_.min_neighbors_);
   bh.max_neighbors(this->params_.max_neighbors_);
   bh.neighbor_dist_factor(this->params_.neighbor_dist_factor_);
+  bh.interp_ptr(this->params_.interp_ptr_);
   return bh;
 }
 

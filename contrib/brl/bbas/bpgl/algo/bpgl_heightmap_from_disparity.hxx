@@ -158,12 +158,9 @@ void bpgl_heightmap<T>::_heightmap_from_pointset(
   // maximum neighbor distance
   T max_dist = neighbor_dist_factor_ * ground_sample_distance_;
 
-  // default interpolation function
-  bpgl_gridding::linear_interp<T,T> interp_fun;
-
   // heightmap gridding
   heightmap_output = bpgl_gridding::grid_data_2d(
-      interp_fun,
+      *interp_ptr_,
       triangulated_xy, height_vals,
       upper_left, ni, nj, ground_sample_distance_,
       min_neighbors_, max_neighbors_, max_dist);
@@ -191,7 +188,7 @@ void bpgl_heightmap<T>::_heightmap_from_pointset(
 
     // scalar gridding
     scalar_output = bpgl_gridding::grid_data_2d(
-        interp_fun,
+        *interp_ptr_,
         triangulated_xy, scalar_vals,
         upper_left, ni, nj, ground_sample_distance_,
         min_neighbors_, max_neighbors_, max_dist);
