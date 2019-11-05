@@ -24,19 +24,23 @@
 namespace bpgl_gridding
 {
 
+//: Interpolation type enumeration
+// useful for fast class discovery when presented a shared_ptr<base_interp>
+enum INTERP_TYPE {INVERSE_DISTANCE, LINEAR};
 
-//: Inverse distance interpolation class
+
+//: Interpolation abstract class
 // invalid_val: Value to return when interpolation is not appropriate
 // dist_eps: The smallest meaningful distance of input points. Must be > 0.
 template<class T, class DATA_T>
-class inverse_distance_interp
+class base_interp
 {
  public:
 
   // constructors
-  inverse_distance_interp() = default;
+  base_interp() = default;
 
-  inverse_distance_interp(
+  base_interp(
       DATA_T invalid_val,
       T dist_eps) :
     invalid_val_(invalid_val),
@@ -49,6 +53,41 @@ class inverse_distance_interp
 
   T dist_eps() const { return dist_eps_; }
   void dist_eps(T x) { dist_eps_ = x; }
+
+  // class identifier
+  virtual INTERP_TYPE type() const = 0;
+
+  // interpolation operator
+  // ***Note this virtual function is disabled to avoid any
+  //    performance hit due to virtualization***
+  // virtual DATA_T operator() (
+  //     vgl_point_2d<T> interp_loc,
+  //     std::vector<vgl_point_2d<T> > const& neighbor_locs,
+  //     std::vector<DATA_T> const& neighbor_vals,
+  //     T max_dist
+  //     ) const = 0;
+
+ protected:
+
+  // parameters with defaults
+  DATA_T invalid_val_ = DATA_T(NAN);
+  T dist_eps_ = 1e-5;
+
+};
+
+
+//: Inverse distance interpolation class
+// base class parameters (see "base_interp" above)
+template<class T, class DATA_T>
+class inverse_distance_interp : public base_interp<T, DATA_T>
+{
+ public:
+
+  // constructors (inherit from base_interp)
+  using base_interp<T, DATA_T>::base_interp;
+
+  // class identifier
+  INTERP_TYPE type() const override { return INVERSE_DISTANCE; }
 
   // interpolation operator
   DATA_T operator() (
@@ -78,18 +117,11 @@ class inverse_distance_interp
     return val_sum / weight_sum;
   }
 
- private:
-
-  // parameters with defaults
-  DATA_T invalid_val_ = DATA_T(NAN);
-  T dist_eps_ = 1e-5;
-
 };
 
 
 //: Linear interpolation class
-// invalid_val: Value to return when interpolation is not appropriate
-// dist_eps: The smallest meaningful distance of input points. Must be > 0.
+// base class parameters (see "base_interp" above)
 // dist_iexp: neighbor weight is proportional to (1/dist)^dist_iexp
 // regularization_lambda: Larger regularization values will bias the solution
 //    towards "flatter" functions.  Very large values will result in weighted
@@ -101,27 +133,17 @@ class inverse_distance_interp
 // accuracy of the final result.  Only on output is the resulting
 // interpolated value cast back to DATA_T
 template<class T, class DATA_T>
-class linear_interp
+class linear_interp : public base_interp<T, DATA_T>
 {
  public:
 
-  // constructors
-  linear_interp() = default;
+  // constructors (inherit from base_interp)
+  using base_interp<T, DATA_T>::base_interp;
 
-  linear_interp(
-      DATA_T invalid_val,
-      T dist_eps) :
-    invalid_val_(invalid_val),
-    dist_eps_(dist_eps)
-  {}
+  // class identifier
+  INTERP_TYPE type() const override { return LINEAR; }
 
   // accessors
-  DATA_T invalid_val() const { return invalid_val_; }
-  void invalid_val(DATA_T x) { invalid_val_ = x; }
-
-  T dist_eps() const { return dist_eps_; }
-  void dist_eps(T x) { dist_eps_ = x; }
-
   int dist_iexp() const { return dist_iexp_; }
   void dist_iexp(int x) { dist_iexp_ = x; }
 
@@ -233,8 +255,6 @@ class linear_interp
  private:
 
   // parameters with defaults
-  DATA_T invalid_val_ = DATA_T(NAN);
-  T dist_eps_ = 1e-5;
   int dist_iexp_ = 2;
   double regularization_lambda_ = 1e-3;
   double rcond_thresh_ = 1e-8;
