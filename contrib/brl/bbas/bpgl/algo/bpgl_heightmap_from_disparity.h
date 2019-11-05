@@ -8,9 +8,11 @@
 // \date Nov 15, 2018
 //
 
+#include <memory>
 #include <vgl/vgl_box_3d.h>
 #include <vgl/vgl_pointset_3d.h>
 #include <vil/vil_image_view.h>
+#include "bpgl_gridding.h"
 
 /**
  * Main convenience function
@@ -67,6 +69,9 @@ class bpgl_heightmap
 
     unsigned max_neighbors() const { return max_neighbors_; }
     void max_neighbors(unsigned x) { max_neighbors_ = x; }
+
+    std::shared_ptr< bpgl_gridding::base_interp<T,T> > interp_ptr() const { return interp_ptr_; }
+    void interp_ptr(std::shared_ptr< bpgl_gridding::base_interp<T,T> >& x) { interp_ptr_ = x; }
 
     //: compute pointset from triangulated image
     void pointset_from_tri(
@@ -130,6 +135,10 @@ class bpgl_heightmap
     unsigned min_neighbors_ = 3;
     unsigned max_neighbors_ = 5;
     T neighbor_dist_factor_ = 3.0;
+
+    // gridding interpolation function (shared pointer)
+    std::shared_ptr< bpgl_gridding::base_interp<T,T> > interp_ptr_
+      { std::make_shared< bpgl_gridding::linear_interp<T,T> >() };
 };
 
 #endif

@@ -4,20 +4,20 @@
 include_directories( ${GEL_INCLUDE_DIR} )
 
 set( bpgl_algo_sources
-  bpgl_construct_cameras.h         bpgl_construct_cameras.cxx
-  bpgl_vsol_lens_warp.h            bpgl_vsol_lens_warp.cxx
-  bpgl_list.h                      bpgl_list.hxx
-  bpgl_interpolate.h               bpgl_interpolate.cxx
-  bpgl_camera_homographies.h       bpgl_camera_homographies.cxx
-  bpgl_nitf_camera_coverage.h      bpgl_nitf_camera_coverage.cxx
-  bpgl_camera_from_box.h           bpgl_camera_from_box.cxx
+  bpgl_construct_cameras.h              bpgl_construct_cameras.cxx
+  bpgl_vsol_lens_warp.h                 bpgl_vsol_lens_warp.cxx
+  bpgl_list.h                           bpgl_list.hxx
+  bpgl_interpolate.h                    bpgl_interpolate.cxx
+  bpgl_camera_homographies.h            bpgl_camera_homographies.cxx
+  bpgl_nitf_camera_coverage.h           bpgl_nitf_camera_coverage.cxx
+  bpgl_camera_from_box.h                bpgl_camera_from_box.cxx
   bpgl_bundle_rolling_shutter_adjust.h  bpgl_bundle_rolling_shutter_adjust.cxx
-  bpgl_project.h                   bpgl_project.cxx
-  bpgl_transform_camera.h                   bpgl_transform_camera.cxx
-  bpgl_gridding.h
-  bpgl_3d_from_disparity.h  bpgl_3d_from_disparity.hxx
-  bpgl_heightmap_from_disparity.h  bpgl_heightmap_from_disparity.hxx
-  bpgl_rectify_affine_image_pair.h   bpgl_rectify_affine_image_pair.cxx
+  bpgl_project.h                        bpgl_project.cxx
+  bpgl_transform_camera.h               bpgl_transform_camera.cxx
+  bpgl_gridding.h                       bpgl_gridding.hxx
+  bpgl_3d_from_disparity.h              bpgl_3d_from_disparity.hxx
+  bpgl_heightmap_from_disparity.h       bpgl_heightmap_from_disparity.hxx
+  bpgl_rectify_affine_image_pair.h      bpgl_rectify_affine_image_pair.cxx
 )
 
 # the ransac implementations use rpl/rrel

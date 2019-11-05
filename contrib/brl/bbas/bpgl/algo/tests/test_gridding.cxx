@@ -145,7 +145,7 @@ void test_interp_real_origin()
 
 
 #ifndef BPGL_TIMING
-#define BPGL_TIMING 0
+#define BPGL_TIMING 1
 #endif
 
 #if BPGL_TIMING
@@ -170,13 +170,21 @@ void test_interp_timing(unsigned long num_iter)
   timer.mark();
   for (unsigned i = 0; i < num_iter; i++)
     value = interp_fun(test_point, ctrl_pts, values);
-  double operator_sec = timer.real() / 1000.0;
+  double virtual_sec = timer.real() / 1000.0;
+
+  timer.mark();
+  for (unsigned i = 0; i < num_iter; i++)
+    value = interp_fun.interp(test_point, ctrl_pts, values);
+  double non_virtual_sec = timer.real() / 1000.0;
 
   std::cout << "---Timing report---\n"
             << "Interpolate " << ctrl_pts.size() << " points for " << num_iter << " iterations\n"
-            << "operator()\n"
-            << "  total time = " << operator_sec << " sec.\n"
-            << "  per-operation time = " << operator_sec / double(num_iter) << " sec.\n"
+            << "virtual function\n"
+            << "  total time = " << virtual_sec << " sec.\n"
+            << "  per-operation time = " << virtual_sec / double(num_iter) << " sec.\n"
+            << "non-virtual function\n"
+            << "  total time = " << non_virtual_sec << " sec.\n"
+            << "  per-operation time = " << non_virtual_sec / double(num_iter) << " sec.\n"
             ;
 }
 #endif
