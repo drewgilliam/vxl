@@ -192,9 +192,13 @@ set( vcl_sources
 # This also avoid trouble where the instantiation hack conflict
 # with modern, more compliant compilers.
 #aux_source_directory(Templates vcl_sources)
-vxl_add_library(LIBRARY_NAME ${VXL_LIB_PREFIX}vcl
-  LIBRARY_SOURCES ${vcl_sources}
-  )
+vxl_add_library(
+    LIBRARY_NAME ${VXL_LIB_PREFIX}vcl
+    LIBRARY_SOURCES ${vcl_sources}
+    INCLUDE_BINARY_DIR  # vcl_compiler.h, vcl_where_root_dir.h
+    INCLUDE_PARENT_DIR
+)
+
 if(UNIX)
   target_link_libraries(${VXL_LIB_PREFIX}vcl m)
 endif()
