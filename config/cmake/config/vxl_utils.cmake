@@ -106,14 +106,14 @@ function( vxl_add_library )
 
   # build interface
   set(build_interface "${CMAKE_CURRENT_SOURCE_DIR}")
-  if (INCLUDE_PARENT_DIR)
+  if (vxl_add_INCLUDE_PARENT_DIR)
     get_filename_component(PARENT_SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}" PATH)
     list(APPEND build_interface "${PARENT_SOURCE_DIR}")
   endif()
 
-  if (INCLUDE_BINARY_DIR)
+  if (vxl_add_INCLUDE_BINARY_DIR)
     list(APPEND build_interface "${CMAKE_CURRENT_BINARY_DIR}")
-    if (INCLUDE_PARENT_DIR)
+    if (vxl_add_INCLUDE_PARENT_DIR)
       get_filename_component(PARENT_BINARY_DIR "${CMAKE_CURRENT_BINARY_DIR}" PATH)
       list(APPEND build_interface "${PARENT_BINARY_DIR}")
     endif()
