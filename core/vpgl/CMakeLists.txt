@@ -38,7 +38,13 @@ set( vpgl_sources
 aux_source_directory(Templates vpgl_sources)
 
 include_directories(${CMAKE_CURRENT_BINARY_DIR})
-vxl_add_library(LIBRARY_NAME ${VXL_LIB_PREFIX}vpgl LIBRARY_SOURCES ${vpgl_sources})
+vxl_add_library(
+    LIBRARY_NAME ${VXL_LIB_PREFIX}vpgl
+    LIBRARY_SOURCES ${vpgl_sources}
+    INCLUDE_BINARY_DIR  # vpgl_export.h
+    INCLUDE_PARENT_DIR
+)
+
 target_link_libraries(${VXL_LIB_PREFIX}vpgl ${VXL_LIB_PREFIX}vnl_algo ${VXL_LIB_PREFIX}vnl ${VXL_LIB_PREFIX}vgl_algo ${VXL_LIB_PREFIX}vgl ${VXL_LIB_PREFIX}vul ${VXL_LIB_PREFIX}vsl ${VXL_LIB_PREFIX}vbl)
 set(CURR_LIB_NAME vpgl)
 set_vxl_library_properties(

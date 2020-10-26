@@ -56,7 +56,12 @@ endif()
 
 include_directories(${CMAKE_CURRENT_BINARY_DIR})
 
-vxl_add_library(LIBRARY_NAME ${VXL_LIB_PREFIX}vul LIBRARY_SOURCES ${vul_sources} ${vul_network_sources})
+vxl_add_library(
+    LIBRARY_NAME ${VXL_LIB_PREFIX}vul
+    LIBRARY_SOURCES ${vul_sources} ${vul_network_sources}
+    INCLUDE_BINARY_DIR  # vul_export.h
+    INCLUDE_PARENT_DIR
+)
 
 if(NOT UNIX)
   target_link_libraries( ${VXL_LIB_PREFIX}vul ws2_32 )

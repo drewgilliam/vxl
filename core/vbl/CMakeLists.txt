@@ -44,7 +44,12 @@ set( vbl_sources
 
 aux_source_directory(Templates vbl_sources)
 
-vxl_add_library(LIBRARY_NAME ${VXL_LIB_PREFIX}vbl LIBRARY_SOURCES ${vbl_sources})
+vxl_add_library(
+    LIBRARY_NAME ${VXL_LIB_PREFIX}vbl
+    LIBRARY_SOURCES ${vbl_sources}
+    INCLUDE_PARENT_DIR
+)
+
 target_link_libraries( ${VXL_LIB_PREFIX}vbl ${VXL_LIB_PREFIX}vcl )
 
 if( VXL_BUILD_EXAMPLES )

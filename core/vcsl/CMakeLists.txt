@@ -62,7 +62,12 @@ doxygen_add_library(core/vcsl
 
   aux_source_directory( Templates vcsl_sources )
 
-  vxl_add_library(LIBRARY_NAME ${VXL_LIB_PREFIX}vcsl LIBRARY_SOURCES ${vcsl_sources} )
+  vxl_add_library(
+      LIBRARY_NAME ${VXL_LIB_PREFIX}vcsl
+      LIBRARY_SOURCES ${vcsl_sources}
+      INCLUDE_PARENT_DIR
+  )
+
   target_link_libraries( ${VXL_LIB_PREFIX}vcsl ${VXL_LIB_PREFIX}vnl ${VXL_LIB_PREFIX}vbl )
 
   if( VXL_BUILD_EXAMPLES )

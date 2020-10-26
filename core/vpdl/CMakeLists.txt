@@ -49,7 +49,13 @@ aux_source_directory(Templates vpdl_sources)
 
 include_directories(${CMAKE_CURRENT_BINARY_DIR})
 
-vxl_add_library(LIBRARY_NAME ${VXL_LIB_PREFIX}vpdl LIBRARY_SOURCES ${vpdl_sources})
+vxl_add_library(
+    LIBRARY_NAME ${VXL_LIB_PREFIX}vpdl
+    LIBRARY_SOURCES ${vpdl_sources}
+    INCLUDE_BINARY_DIR  # vpdl_export.h
+    INCLUDE_PARENT_DIR
+)
+
 target_link_libraries( ${VXL_LIB_PREFIX}vpdl ${VXL_LIB_PREFIX}vnl_algo ${VXL_LIB_PREFIX}vnl )
 set(CURR_LIB_NAME vpdl)
 set_vxl_library_properties(

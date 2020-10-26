@@ -86,7 +86,13 @@ endif()
 aux_source_directory(Templates vgl_sources)
 
 include_directories(${CMAKE_CURRENT_BINARY_DIR})
-vxl_add_library(LIBRARY_NAME ${VXL_LIB_PREFIX}vgl LIBRARY_SOURCES ${vgl_sources})
+vxl_add_library(
+    LIBRARY_NAME ${VXL_LIB_PREFIX}vgl
+    LIBRARY_SOURCES ${vgl_sources}
+    INCLUDE_BINARY_DIR  # vgl_export.h
+    INCLUDE_PARENT_DIR
+)
+
 target_link_libraries( ${VXL_LIB_PREFIX}vgl ${VXL_LIB_PREFIX}vcl )
 set(CURR_LIB_NAME vgl)
 set_vxl_library_properties(

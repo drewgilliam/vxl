@@ -160,7 +160,11 @@ if(CMAKE_COMPILER_IS_GNUCXX)
   set_source_files_properties(vil1_image_as.cxx PROPERTIES COMPILE_FLAGS -O0)
 endif()
 
-vxl_add_library(LIBRARY_NAME ${VXL_LIB_PREFIX}vil1 LIBRARY_SOURCES ${vil1_sources})
+vxl_add_library(
+    LIBRARY_NAME ${VXL_LIB_PREFIX}vil1
+    LIBRARY_SOURCES ${vil1_sources}
+    INCLUDE_PARENT_DIR
+)
 
 if(JPEG_FOUND)
   target_link_libraries( ${VXL_LIB_PREFIX}vil1 ${JPEG_LIBRARIES} )

@@ -12,7 +12,13 @@ set( vpl_sources
   vpl_mutex.h
 )
 
-vxl_add_library(LIBRARY_NAME ${VXL_LIB_PREFIX}vpl LIBRARY_SOURCES ${vpl_sources})
+vxl_add_library(
+    LIBRARY_NAME ${VXL_LIB_PREFIX}vpl
+    LIBRARY_SOURCES ${vpl_sources}
+    INCLUDE_BINARY_DIR  # vpl_export.h
+    INCLUDE_PARENT_DIR
+)
+
 if(NOT WIN32)
   set(fPIC_COMPILER_FLAGS "-fPIC")
 endif()

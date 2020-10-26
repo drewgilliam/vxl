@@ -141,7 +141,13 @@ endif()
 aux_source_directory(Templates vidl_sources)
 
 include_directories(${CMAKE_CURRENT_BINARY_DIR})
-vxl_add_library(LIBRARY_NAME ${VXL_LIB_PREFIX}vidl LIBRARY_SOURCES ${vidl_sources})
+vxl_add_library(
+    LIBRARY_NAME ${VXL_LIB_PREFIX}vidl
+    LIBRARY_SOURCES ${vidl_sources}
+    INCLUDE_BINARY_DIR  # vidl_config.h, vidl_export.h
+    INCLUDE_PARENT_DIR
+)
+
 set(CURR_LIB_NAME vidl)
 set_vxl_library_properties(
      TARGET_NAME ${VXL_LIB_PREFIX}${CURR_LIB_NAME}
