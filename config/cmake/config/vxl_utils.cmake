@@ -61,10 +61,16 @@ endmacro()
 #  LIBRARY_SOURCES     (required) is a list of sources needed to create the
 #                      library. It should also contain headers to install for
 #                      building against the library.
+#  INCLUDE_BINARY_DIR  (optional) Add CMAKE_CURRENT_BINARY_DIR to target
+#                      BUILD_INTERFACE, useful to include build-generated headers
+#                      (e.g., files created via vxl_configure_file).
+#  INCLUDE_PARENT_DIR  (optional) Add parent directories to BUILD_INTERFACE,
+#                      allowing include directives to <PARENT/file.h> (e.g.,
+#                      "#include <vnl/vnl_math.h"). If enabled, always include
+#                      the parent source directory, and optionally include
+#                      the parent binary directory depending on INCLUDE_BINARY_DIR.
 #  HEADER_BUILD_DIR    (optional) directory to append to library target
-#                      BUILD_INTERFACE. Useful to include a target build
-#                      directory (CMAKE_CURRENT_BINARY_DIR) containing files
-#                      generated via vxl_configure_file.
+#                      BUILD_INTERFACE.
 #  HEADER_INSTALL_DIR  (optional) directory to install headers relative to
 #                      VXL_INSTALL_INCLUDE_DIR if VXL_INSTALL_INCLUDE_DIR is
 #                      not its default value; otherwise, the relative path in
@@ -72,7 +78,7 @@ endmacro()
 #
 function( vxl_add_library )
   cmake_parse_arguments(vxl_add
-     ""  # options
+     "INCLUDE_BINARY_DIR;INCLUDE_PARENT_DIR"  # options
      "LIBRARY_NAME;HEADER_BUILD_DIR;HEADER_INSTALL_DIR"  # oneValueArgs
      "LIBRARY_SOURCES"  # multiValueArgs
      ${ARGN} )
@@ -100,6 +106,19 @@ function( vxl_add_library )
 
   # build interface
   set(build_interface "${CMAKE_CURRENT_SOURCE_DIR}")
+  if (INCLUDE_PARENT_DIR)
+    get_filename_component(PARENT_SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}" PATH)
+    list(APPEND build_interface "${PARENT_SOURCE_DIR}")
+  endif()
+
+  if (INCLUDE_BINARY_DIR)
+    list(APPEND build_interface "${CMAKE_CURRENT_BINARY_DIR}")
+    if (INCLUDE_PARENT_DIR)
+      get_filename_component(PARENT_BINARY_DIR "${CMAKE_CURRENT_BINARY_DIR}" PATH)
+      list(APPEND build_interface "${PARENT_BINARY_DIR}")
+    endif()
+  endif()
+
   if (DEFINED vxl_add_HEADER_BUILD_DIR)
     list(APPEND build_interface "${vxl_add_HEADER_BUILD_DIR}")
   endif()
