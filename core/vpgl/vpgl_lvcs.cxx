@@ -56,50 +56,6 @@ vpgl_lvcs::get_length_conversions(double & to_meters, double & to_feet) const
 vpgl_lvcs::~vpgl_lvcs() = default;
 
 
-// constructor
-vpgl_lvcs::vpgl_lvcs(const vpgl_lvcs & lvcs)
-  : vbl_ref_count()
-  , local_cs_name_(lvcs.local_cs_name_)
-  , localCSOriginLat_(lvcs.localCSOriginLat_)
-  , localCSOriginLon_(lvcs.localCSOriginLon_)
-  , localCSOriginElev_(lvcs.localCSOriginElev_)
-  , lat_scale_(lvcs.lat_scale_)
-  , lon_scale_(lvcs.lon_scale_)
-  , geo_angle_unit_(lvcs.geo_angle_unit_)
-  , localXYZUnit_(lvcs.localXYZUnit_)
-  , lox_(lvcs.lox_)
-  , loy_(lvcs.loy_)
-  , theta_(lvcs.theta_)
-  , localUTMOrigin_X_East_(lvcs.localUTMOrigin_X_East_)
-  , localUTMOrigin_Y_North_(lvcs.localUTMOrigin_Y_North_)
-  , localUTMOrigin_Zone_(lvcs.localUTMOrigin_Zone_)
-{
-  if (lat_scale_ == 0.0 || lon_scale_ == 0.0)
-    this->compute_scale();
-}
-
-
-vpgl_lvcs &
-vpgl_lvcs::operator=(const vpgl_lvcs & lvcs)
-{
-  local_cs_name_ = lvcs.local_cs_name_;
-  localCSOriginLat_ = lvcs.localCSOriginLat_;
-  localCSOriginLon_ = lvcs.localCSOriginLon_;
-  localCSOriginElev_ = lvcs.localCSOriginElev_;
-  lat_scale_ = lvcs.lat_scale_;
-  lon_scale_ = lvcs.lon_scale_;
-  geo_angle_unit_ = lvcs.geo_angle_unit_, localXYZUnit_ = lvcs.localXYZUnit_;
-  lox_ = lvcs.lox_;
-  loy_ = lvcs.loy_;
-  theta_ = lvcs.theta_;
-  localUTMOrigin_X_East_ = lvcs.localUTMOrigin_X_East_;
-  localUTMOrigin_Y_North_ = lvcs.localUTMOrigin_Y_North_;
-  localUTMOrigin_Zone_ = lvcs.localUTMOrigin_Zone_;
-  if (lat_scale_ == 0.0 || lon_scale_ == 0.0)
-    this->compute_scale();
-  return *this;
-}
-
 vpgl_lvcs::vpgl_lvcs(double orig_lat,
                      double orig_lon,
                      double orig_elev,

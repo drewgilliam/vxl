@@ -81,9 +81,7 @@ class vpgl_lvcs : public vbl_ref_count
             cs_names cs_name=wgs84,
             AngUnits ang_unit=DEG, LenUnits elev_unit=METERS);
 
-  vpgl_lvcs(const vpgl_lvcs&);
   ~vpgl_lvcs() override;
-  vpgl_lvcs& operator=(const vpgl_lvcs&);
 
   //: Create a copy on the heap via new and return pointer
   vpgl_lvcs *clone() const { return new vpgl_lvcs(*this); }
