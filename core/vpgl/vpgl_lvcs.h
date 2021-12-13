@@ -40,7 +40,6 @@
 #ifdef _MSC_VER
 #  include <vcl_msvc_warnings.h>
 #endif
-#include <vsl/vsl_binary_io.h>
 #include <vbl/vbl_ref_count.h>
 //#include "vpgl_dll.h"
 #include <vpgl/vpgl_export.h>
@@ -152,15 +151,6 @@ class vpgl_lvcs : public vbl_ref_count
 
   void get_utm_origin(double& x, double& y, double& elev, int& zone) const;
   void get_utm_origin(double& x, double& y, double& elev, int& zone, bool& south_flag) const;
-
-  //: Binary save self to stream.
-  void b_write(vsl_b_ostream &os) const;
-
-  //: Binary load self from stream.
-  void b_read(vsl_b_istream &is);
-
-  //: Return IO version number;
-  short version() const { return 1; }
 
 
   // INTERNALS-----------------------------------------------------------------
