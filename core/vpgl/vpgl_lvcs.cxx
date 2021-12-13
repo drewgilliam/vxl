@@ -79,25 +79,7 @@ vpgl_lvcs::vpgl_lvcs(double orig_lat,
   , loy_(loy)
   , theta_(theta)
 {
-  double local_to_meters, local_to_feet, local_to_radians, local_to_degrees;
-  this->get_angle_conversions(local_to_radians, local_to_degrees);
-  this->get_length_conversions(local_to_meters, local_to_feet);
-
-  if (cs_name == vpgl_lvcs::utm)
-  {
-    //: the origin is still given in wgs84
-    vpgl_utm u;
-    u.transform(localCSOriginLat_ * local_to_degrees,
-                localCSOriginLon_ * local_to_degrees,
-                localUTMOrigin_X_East_,
-                localUTMOrigin_Y_North_,
-                localUTMOrigin_Zone_);
-    // std::cout << "utm origin zone: " << localUTMOrigin_Zone_ << ' ' << localUTMOrigin_X_East_ << " East " <<
-    // localUTMOrigin_Y_North_ << " North" << std::endl;
-    lat_scale_ = 0.0;
-    lon_scale_ = 0.0;
-  }
-
+  this->compute_utm_origin();
   this->compute_scale();
 }
 
@@ -126,23 +108,7 @@ vpgl_lvcs::vpgl_lvcs(double orig_lat,
   , loy_(0)
   , theta_(0)
 {
-  double local_to_meters, local_to_feet, local_to_radians, local_to_degrees;
-  this->get_angle_conversions(local_to_radians, local_to_degrees);
-  this->get_length_conversions(local_to_meters, local_to_feet);
-
-  if (cs_name == vpgl_lvcs::utm)
-  {
-    //: the origin is still given in wgs84
-    vpgl_utm u;
-    u.transform(localCSOriginLat_ * local_to_degrees,
-                localCSOriginLon_ * local_to_degrees,
-                localUTMOrigin_X_East_,
-                localUTMOrigin_Y_North_,
-                localUTMOrigin_Zone_);
-    // std::cout << "utm origin zone: " << localUTMOrigin_Zone_ << ' ' << localUTMOrigin_X_East_ << " East  " <<
-    // localUTMOrigin_Y_North_ << " North  elev: " << localCSOriginElev_ << std::endl;
-  }
-
+  this->compute_utm_origin();
   this->compute_scale();
 }
 
@@ -178,23 +144,7 @@ vpgl_lvcs::vpgl_lvcs(double lat_low,
   localCSOriginLat_ = average_lat;
   localCSOriginLon_ = average_lon;
 
-  double local_to_meters, local_to_feet, local_to_radians, local_to_degrees;
-  this->get_angle_conversions(local_to_radians, local_to_degrees);
-  this->get_length_conversions(local_to_meters, local_to_feet);
-
-  if (cs_name == vpgl_lvcs::utm)
-  {
-    //: the origin is still given in wgs84
-    vpgl_utm u;
-    u.transform(localCSOriginLat_ * local_to_degrees,
-                localCSOriginLon_ * local_to_degrees,
-                localUTMOrigin_X_East_,
-                localUTMOrigin_Y_North_,
-                localUTMOrigin_Zone_);
-    // std::cout << "utm origin zone: " << localUTMOrigin_Zone_ << ' ' << localUTMOrigin_X_East_ << " East  " <<
-    // localUTMOrigin_Y_North_ << " North" << std::endl;
-  }
-
+  this->compute_utm_origin();
   this->compute_scale();
 }
 
@@ -357,6 +307,34 @@ vpgl_lvcs::compute_scale()
     // lon_scale_ is in radians/meter
   }
 }
+
+//: compute UTM origin
+void
+vpgl_lvcs::compute_utm_origin()
+{
+  // confirm UTM should be populated
+  if (local_cs_name_ != vpgl_lvcs::utm)
+  {
+    return;
+  }
+
+  // check for populated UTM origin
+  if (localUTMOrigin_Zone_ > 0)
+  {
+    return;
+  }
+
+  // compute UTM origin
+  double local_to_radians, local_to_degrees;
+  this->get_angle_conversions(local_to_radians, local_to_degrees);
+  vpgl_utm u;
+  u.transform(localCSOriginLat_ * local_to_degrees,
+              localCSOriginLon_ * local_to_degrees,
+              localUTMOrigin_X_East_,
+              localUTMOrigin_Y_North_,
+              localUTMOrigin_Zone_);
+}
+
 
 //------------------------------------------------------------------------------
 //: Converts pointin, given in local vertical coord system, to pointout in the global coord system given by the string
@@ -844,23 +822,7 @@ vpgl_lvcs::read(std::istream & strm)
   strm >> lat_scale_ >> lon_scale_;
   strm >> lox_ >> loy_ >> theta_;
 
-  if (local_cs_name_ == vpgl_lvcs::utm)
-  {
-    double local_to_meters, local_to_feet, local_to_radians, local_to_degrees;
-    this->get_angle_conversions(local_to_radians, local_to_degrees);
-    this->get_length_conversions(local_to_meters, local_to_feet);
-
-    //: the origin is still given in wgs84
-    vpgl_utm u;
-    u.transform(localCSOriginLat_ * local_to_degrees,
-                localCSOriginLon_ * local_to_degrees,
-                localUTMOrigin_X_East_,
-                localUTMOrigin_Y_North_,
-                localUTMOrigin_Zone_);
-    // std::cout << "utm origin zone: " << localUTMOrigin_Zone_ << ' ' << localUTMOrigin_X_East_ << " East  " <<
-    // localUTMOrigin_Y_North_ << " North" << std::endl;
-  }
-
+  this->compute_utm_origin();
   this->compute_scale();
 }
 

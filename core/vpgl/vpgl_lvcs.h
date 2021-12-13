@@ -154,6 +154,7 @@ class vpgl_lvcs : public vbl_ref_count
 
  protected:
   void compute_scale();
+  void compute_utm_origin();
   void local_transform(double& x, double& y) const;
   void inverse_local_transform(double& x, double& y) const;
   void get_angle_conversions(double& to_radians, double& to_degrees) const;
