@@ -974,6 +974,15 @@ vpgl_lvcs::operator==(vpgl_lvcs const & r) const
   eq = eq && (this->lox_ == r.lox_);
   eq = eq && (this->loy_ == r.loy_);
   eq = eq && (this->theta_ == r.theta_);
+
+  // UTM similarity
+  if (this->local_cs_name_ == vpgl_lvcs::utm)
+  {
+    eq = eq && (this->localUTMOrigin_X_East_ == r.localUTMOrigin_X_East_);
+    eq = eq && (this->localUTMOrigin_Y_North_ == r.localUTMOrigin_Y_North_);
+    eq = eq && (this->localUTMOrigin_Zone_ == r.localUTMOrigin_Zone_);
+  }
+
   return eq;
 }
 

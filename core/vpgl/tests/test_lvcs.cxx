@@ -48,6 +48,15 @@ test_lvcs()
   TEST_NEAR("latitude", y, orig_lat, 1e-6);
   TEST_NEAR("elevation", z, orig_elev, 1e-3);
 
+  // copy contructor
+  vpgl_lvcs lvcs_copy(lvcs_wgs84);
+  TEST("copy constructor", lvcs_copy, lvcs_wgs84);
+
+  // operator=
+  vpgl_lvcs lvcs_opeq(lvcs_wgs84);
+  TEST("operator=", lvcs_opeq, lvcs_wgs84);
+
+
 
   // ----- UTM lvcs -----
   std::cout << "\nTest UTM LVCS\n";
