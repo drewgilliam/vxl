@@ -97,8 +97,8 @@ vpgl_lvcs::vpgl_lvcs(double orig_lat,
     lat_scale_ = 0.0;
     lon_scale_ = 0.0;
   }
-  if (lat_scale_ == 0.0 || lon_scale_ == 0.0)
-    this->compute_scale();
+
+  this->compute_scale();
 }
 
 //--------------------------------------------------------------------------
@@ -228,6 +228,12 @@ vpgl_lvcs::degrees_to_dms(double geoval, int & degrees, int & minutes, double & 
 void
 vpgl_lvcs::compute_scale()
 {
+  // check for populated scale
+  if ((lat_scale_ != 0.0) && (lon_scale_ != 0.0))
+  {
+    return;
+  }
+
   double wgs84_phi, wgs84_lamda, wgs84_hgt; // WGS84 coords of the origin
   double grs84_x, grs84_y, grs84_z;         // GRS84 coords of the origin
   double grs84_x1, grs84_y1, grs84_z1;
@@ -855,10 +861,7 @@ vpgl_lvcs::read(std::istream & strm)
     // localUTMOrigin_Y_North_ << " North" << std::endl;
   }
 
-  if (lat_scale_ == 0.0 && lon_scale_ == 0.0)
-  {
-    this->compute_scale();
-  }
+  this->compute_scale();
 }
 
 void
