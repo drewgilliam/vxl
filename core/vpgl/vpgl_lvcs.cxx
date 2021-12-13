@@ -1,5 +1,6 @@
 #include <string>
 #include <cstring>
+#include <fstream>
 #include "vpgl_lvcs.h"
 //:
 // \file
@@ -785,6 +786,17 @@ vpgl_lvcs::print(std::ostream & strm) const
        << localCSOriginElev_ << ")\n"
        << "scales(lat lon) : (" << lat_scale_ << ' ' << lon_scale_ << ")\n"
        << "local transform(lox loy theta) : (" << lox_ << ' ' << loy_ << ' ' << theta_ << ")\n]\n";
+}
+
+//: Save internals to file
+bool
+vpgl_lvcs::save(std::string fname) const {
+  std::ofstream of(fname.c_str());
+  if (of) {
+    print(of);
+    return true;
+  }
+  return false;
 }
 
 //: Read internals from strm.
