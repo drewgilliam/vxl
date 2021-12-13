@@ -118,6 +118,8 @@ vpgl_lvcs::vpgl_lvcs(double orig_lat,
   , localCSOriginLat_(orig_lat)
   , localCSOriginLon_(orig_lon)
   , localCSOriginElev_(orig_elev)
+  , lat_scale_(0)
+  , lon_scale_(0)
   , geo_angle_unit_(ang_unit)
   , localXYZUnit_(len_unit)
   , lox_(0)
@@ -140,8 +142,7 @@ vpgl_lvcs::vpgl_lvcs(double orig_lat,
     // std::cout << "utm origin zone: " << localUTMOrigin_Zone_ << ' ' << localUTMOrigin_X_East_ << " East  " <<
     // localUTMOrigin_Y_North_ << " North  elev: " << localCSOriginElev_ << std::endl;
   }
-  lat_scale_ = 0;
-  lon_scale_ = 0;
+
   this->compute_scale();
 }
 
@@ -161,9 +162,16 @@ vpgl_lvcs::vpgl_lvcs(double lat_low,
                      AngUnits ang_unit,
                      LenUnits elev_unit)
   : local_cs_name_(cs_name)
+  //, localCSOriginLat_(orig_lat)  // calculated
+  //, localCSOriginLon_(orig_lon)  // calculated
   , localCSOriginElev_(elev)
+  , lat_scale_(0)
+  , lon_scale_(0)
   , geo_angle_unit_(ang_unit)
-  , localXYZUnit_(elev_unit)
+  , localXYZUnit_(len_unit)
+  , lox_(0)
+  , loy_(0)
+  , theta_(0)
 {
   double average_lat = (lat_low + lat_high) / 2.0;
   double average_lon = (lon_low + lon_high) / 2.0;
@@ -187,9 +195,6 @@ vpgl_lvcs::vpgl_lvcs(double lat_low,
     // localUTMOrigin_Y_North_ << " North" << std::endl;
   }
 
-
-  lat_scale_ = 0;
-  lon_scale_ = 0;
   this->compute_scale();
 }
 
