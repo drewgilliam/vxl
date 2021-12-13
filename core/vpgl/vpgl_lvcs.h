@@ -127,7 +127,9 @@ class vpgl_lvcs : public vbl_ref_count
   void get_scale(double& lat, double& lon) const;
   void get_transform(double& lox, double& loy, double& theta) const;
   void set_transform(const double lox, const double loy, const double theta);
-  void set_origin(const double lon, const double lat, const double elev);
+  void set_origin(const double lon, const double lat, const double elev,
+                  int force_utm_zone=-1, int force_south_flag=-1);
+
   cs_names get_cs_name() const;
   inline LenUnits local_length_unit() const{return this->localXYZUnit_;}
   inline AngUnits geo_angle_unit() const {return this->geo_angle_unit_;}
@@ -244,11 +246,13 @@ inline void vpgl_lvcs::set_transform(const double lox, const double loy,
 
 //------------------------------------------------------------
 //: Set the origin of the local system
-inline void vpgl_lvcs::set_origin(const double lon, const double lat, const double elev)
+inline void vpgl_lvcs::set_origin(const double lon, const double lat, const double elev,
+                                  int force_utm_zone, int force_south_flag)
 {
     localCSOriginLon_ = lon;
     localCSOriginLat_ = lat;
     localCSOriginElev_ = elev;
+    this->compute_utm_origin(force_utm_zone, force_south_flag);
 }
 
 inline void vpgl_lvcs::radians_to_dms(double rad, int& degrees, int& minutes, double& seconds) const
