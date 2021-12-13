@@ -36,5 +36,18 @@ x_write(std::ostream & os, vpgl_lvcs const & v, std::string element_name)
   xml_element.add_attribute("local_origin_x", lox);
   xml_element.add_attribute("local_origin_y", loy);
   xml_element.add_attribute("theta", theta);
+
+  if (v.get_cs_name() == vpgl_lvcs::utm)
+  {
+    double easting, northing, utm_elev;
+    int utm_zone;
+    bool south_flag;
+    v.get_utm_origin(easting, northing, utm_elev, utm_zone, south_flag);
+    xml_element.add_attribute("origin_easting", easting);
+    xml_element.add_attribute("origin_northing", northing);
+    xml_element.add_attribute("origin_utm_zone", utm_zone);
+    xml_element.add_attribute("origin_south_flag", south_flag);
+  }
+
   xml_element.x_write(os);
 }
