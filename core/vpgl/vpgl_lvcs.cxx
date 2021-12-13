@@ -332,7 +332,8 @@ vpgl_lvcs::compute_utm_origin()
               localCSOriginLon_ * local_to_degrees,
               localUTMOrigin_X_East_,
               localUTMOrigin_Y_North_,
-              localUTMOrigin_Zone_);
+              localUTMOrigin_Zone_,
+              localUTMOrigin_SouthFlag_);
 }
 
 
@@ -368,11 +369,6 @@ vpgl_lvcs::local_to_global(const double pointin_x,
   double aligned_y = pointin_y;
   local_transform(aligned_x, aligned_y);
 
-  // Check current system is in south hemisphere or north hemisphere
-  bool south_flag = false;
-  if (localCSOriginLat_ < 0)
-    south_flag = true;
-
   if (local_cs_name_ == vpgl_lvcs::utm)
   {
 
@@ -402,7 +398,7 @@ vpgl_lvcs::local_to_global(const double pointin_x,
                 local_lat,
                 local_lon,
                 local_elev,
-                south_flag);
+                localUTMOrigin_SouthFlag_);
 
     if (global_cs_name == vpgl_lvcs::wgs84)
     { // global values will be in degrees and in meters
