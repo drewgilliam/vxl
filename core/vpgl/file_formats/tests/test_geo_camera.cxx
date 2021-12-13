@@ -8,6 +8,8 @@
 
 #include "vpgl/vpgl_lvcs.h"
 #include "vpgl/file_formats/vpgl_geo_camera.h"
+#include "vpl/vpl.h"
+#include "vsl/vsl_binary_io.h"
 
 // helper function: test camera.project(x, y) == (u, v)
 void
@@ -22,6 +24,31 @@ _test_project(vpgl_geo_camera camera, double x, double y, double u, double v)
   verr = std::fabs(v - vresult);
   TEST_NEAR("vpgl_geo_camera.project", uerr + verr, 0.0, 1e-3);
 }
+
+// helper function test binary io
+void
+_test_binary_io(vpgl_geo_camera const& cam, std::string filename)
+{
+  vsl_b_ofstream bp_out(filename.c_str());
+  TEST("Created " + filename + "for writing", (!bp_out), false);
+
+  cam.b_write(bp_out);
+  bp_out.close();
+
+  vsl_b_ifstream bp_in(filename.c_str());
+  TEST("Opened " + filename + " for reading", (!bp_in), false);
+
+  vpgl_geo_camera cam_read;
+  cam_read.b_read(bp_in);
+  bp_in.close();
+
+  std::cout << "Recovered vpgl_geo_camera:\n" << cam_read << std::endl;
+  TEST("Recovery from binary read", cam_read, cam);
+
+  // remove file:
+  vpl_unlink(filename.ctr());
+}
+
 
 static void
 test_geo_camera()
@@ -53,6 +80,8 @@ test_geo_camera()
     _test_project(cam0, x, y, u, v);
   }
 
+  _test_binary_io(cam0, "test_geo_camera_io.tmp");
+
   // WGS84 geocam with lvcs
   // local coordinate -> raster coordinate
   auto lvcs = vpgl_lvcs(30.0, 100.0, 0.0);
@@ -70,6 +99,9 @@ test_geo_camera()
     std::tie(x, y, u, v) = item;
     _test_project(cam1, x, y, u, v);
   }
+
+  _test_binary_io(cam1, "test_geo_camera_lvcs_io.tmp");
+
 }
 
 TESTMAIN(test_geo_camera);
