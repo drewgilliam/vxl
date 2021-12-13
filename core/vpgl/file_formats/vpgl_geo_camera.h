@@ -23,6 +23,7 @@
 #include <vpgl/vpgl_lvcs_sptr.h>
 #include <vpgl/vpgl_lvcs.h>
 #include <vnl/vnl_matrix.h>
+#include <vsl/vsl_binary_io.h>
 
 #include <vpgl/vpgl_camera.h>
 

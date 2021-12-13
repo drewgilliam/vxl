@@ -15,6 +15,7 @@
 #include "vnl/vnl_inverse.h"
 
 #include "vpgl/vpgl_lvcs.h"
+#include "vpgl/io/vpgl_io_lvcs.h"
 #include "vpgl/vpgl_utm.h"
 #include "vul/vul_file.h"
 
@@ -829,9 +830,18 @@ vpgl_geo_camera::img_four_corners_in_utm(const unsigned ni,
 
 
 bool
-vpgl_geo_camera::operator==(vpgl_geo_camera const & rhs) const
+vpgl_geo_camera::operator==(vpgl_geo_camera const & that) const
 {
-  return this->trans_matrix_ == rhs.trans_matrix_ && *(this->lvcs_) == *(rhs.lvcs_);
+  // shallow pointer equality
+  bool lvcs_equal = this->lvcs_ == that.lvcs_;
+
+  // value equality for non-nullptr
+  if (!lvcs_equal && this->lvcs_ && that.lvcs_) {
+    lvcs_equal = *(this->lvcs_) == *(that.lvcs_);
+  }
+
+  // full comparison
+  return lvcs_equal && this->trans_matrix_ == that.trans_matrix_;
 }
 
 //: Write vpgl_geo_camera to stream
@@ -946,7 +956,7 @@ vpgl_geo_camera::b_write(vsl_b_ostream & os) const
     for (unsigned j = 0; j < trans_matrix_.cols(); j++)
       vsl_b_write(os, trans_matrix_[i][j]);
 
-  lvcs_->b_write(os);
+  vsl_b_write(os, lvcs_);
   vsl_b_write(os, is_utm_);
   vsl_b_write(os, utm_zone_);
   vsl_b_write(os, northing_);
@@ -973,8 +983,7 @@ vpgl_geo_camera::b_read(vsl_b_istream & is)
         for (unsigned j = 0; j < ncols; j++)
           vsl_b_read(is, trans_matrix_[i][j]);
 
-      vpgl_lvcs_sptr lvcs_ = new vpgl_lvcs(0, 0, 0);
-      lvcs_->b_read(is);
+      vsl_b_read(is, lvcs_);
       vsl_b_read(is, is_utm_);
       vsl_b_read(is, utm_zone_);
       vsl_b_read(is, northing_);
