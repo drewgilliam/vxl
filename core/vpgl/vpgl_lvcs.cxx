@@ -66,7 +66,9 @@ vpgl_lvcs::vpgl_lvcs(double orig_lat,
                      LenUnits len_unit, // = METERS
                      double lox,
                      double loy,
-                     double theta)
+                     double theta,
+                     int force_utm_zone,
+                     int force_south_flag)
   : local_cs_name_(cs_name)
   , localCSOriginLat_(orig_lat)
   , localCSOriginLon_(orig_lon)
@@ -79,7 +81,7 @@ vpgl_lvcs::vpgl_lvcs(double orig_lat,
   , loy_(loy)
   , theta_(theta)
 {
-  this->compute_utm_origin();
+  this->compute_utm_origin(force_utm_zone, force_south_flag);
   this->compute_scale();
 }
 
@@ -95,7 +97,9 @@ vpgl_lvcs::vpgl_lvcs(double orig_lat,
                      double orig_elev,
                      cs_names cs_name,
                      AngUnits ang_unit,
-                     LenUnits len_unit)
+                     LenUnits len_unit,
+                     int force_utm_zone,
+                     int force_south_flag)
   : local_cs_name_(cs_name)
   , localCSOriginLat_(orig_lat)
   , localCSOriginLon_(orig_lon)
@@ -108,7 +112,7 @@ vpgl_lvcs::vpgl_lvcs(double orig_lat,
   , loy_(0)
   , theta_(0)
 {
-  this->compute_utm_origin();
+  this->compute_utm_origin(force_utm_zone, force_south_flag);
   this->compute_scale();
 }
 
@@ -126,7 +130,9 @@ vpgl_lvcs::vpgl_lvcs(double lat_low,
                      double elev,
                      cs_names cs_name,
                      AngUnits ang_unit,
-                     LenUnits elev_unit)
+                     LenUnits len_unit,
+                     int force_utm_zone,
+                     int force_south_flag)
   : local_cs_name_(cs_name)
   //, localCSOriginLat_(orig_lat)  // calculated
   //, localCSOriginLon_(orig_lon)  // calculated
@@ -144,7 +150,7 @@ vpgl_lvcs::vpgl_lvcs(double lat_low,
   localCSOriginLat_ = average_lat;
   localCSOriginLon_ = average_lon;
 
-  this->compute_utm_origin();
+  this->compute_utm_origin(force_utm_zone, force_south_flag);
   this->compute_scale();
 }
 
@@ -310,7 +316,7 @@ vpgl_lvcs::compute_scale()
 
 //: compute UTM origin
 void
-vpgl_lvcs::compute_utm_origin()
+vpgl_lvcs::compute_utm_origin(int force_utm_zone, int force_south_flag)
 {
   // confirm UTM should be populated
   if (local_cs_name_ != vpgl_lvcs::utm)
@@ -333,7 +339,9 @@ vpgl_lvcs::compute_utm_origin()
               localUTMOrigin_X_East_,
               localUTMOrigin_Y_North_,
               localUTMOrigin_Zone_,
-              localUTMOrigin_SouthFlag_);
+              localUTMOrigin_SouthFlag_,
+              force_utm_zone,
+              force_south_flag);
 }
 
 
