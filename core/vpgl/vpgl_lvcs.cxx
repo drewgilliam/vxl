@@ -6,7 +6,6 @@
 #ifdef _MSC_VER
 #  include "vcl_msvc_warnings.h"
 #endif
-#include "vsl/vsl_basic_xml_element.h"
 #include "vpgl/vpgl_datum_conversion.h"
 #include "vpgl/vpgl_earth_constants.h"
 #include "vpgl/vpgl_utm.h"
@@ -958,65 +957,4 @@ vpgl_lvcs::operator==(vpgl_lvcs const & r) const
   }
 
   return eq;
-}
-
-//: Binary save self to stream.
-void
-vpgl_lvcs::b_write(vsl_b_ostream & os) const
-{
-  vsl_b_write(os, version());
-  vsl_b_write(os, (int)local_cs_name_);
-  vsl_b_write(os, localCSOriginLat_);
-  vsl_b_write(os, localCSOriginLon_);
-  vsl_b_write(os, localCSOriginElev_);
-  vsl_b_write(os, lat_scale_);
-  vsl_b_write(os, lon_scale_);
-  vsl_b_write(os, (int)geo_angle_unit_);
-  vsl_b_write(os, (int)localXYZUnit_);
-  vsl_b_write(os, lox_);
-  vsl_b_write(os, loy_);
-  vsl_b_write(os, theta_);
-  vsl_b_write(os, localUTMOrigin_X_East_);
-  vsl_b_write(os, localUTMOrigin_Y_North_);
-  vsl_b_write(os, localUTMOrigin_Zone_);
-}
-
-
-//: Binary load self from stream.
-void
-vpgl_lvcs::b_read(vsl_b_istream & is)
-{
-  if (!is)
-    return;
-  short ver;
-  vsl_b_read(is, ver);
-  switch (ver)
-  {
-    case 1:
-      int val;
-      vsl_b_read(is, val);
-      local_cs_name_ = (vpgl_lvcs::cs_names)val;
-      vsl_b_read(is, localCSOriginLat_);
-      vsl_b_read(is, localCSOriginLon_);
-      vsl_b_read(is, localCSOriginElev_);
-      vsl_b_read(is, lat_scale_);
-      vsl_b_read(is, lon_scale_);
-      vsl_b_read(is, val);
-      geo_angle_unit_ = (vpgl_lvcs::AngUnits)val;
-      vsl_b_read(is, val);
-      localXYZUnit_ = (vpgl_lvcs::LenUnits)val;
-      vsl_b_read(is, lox_);
-      vsl_b_read(is, loy_);
-      vsl_b_read(is, theta_);
-      vsl_b_read(is, localUTMOrigin_X_East_);
-      vsl_b_read(is, localUTMOrigin_Y_North_);
-      vsl_b_read(is, localUTMOrigin_Zone_);
-      break;
-
-    default:
-      std::cerr << "I/O ERROR: vpgl_lvcs::b_read(vsl_b_istream&)\n"
-                << "           Unknown version number " << ver << '\n';
-      is.is().clear(std::ios::badbit); // Set an unrecoverable IO error on stream
-      return;
-  }
 }
