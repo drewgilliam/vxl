@@ -38,11 +38,13 @@ class vpgl_geo_camera : public vpgl_camera<double>
   vpgl_geo_camera();
 
   //: if scale tag is false be sure that trans_matrix[0][0] and trans_matrix[1][1] is 1.0 otherwise set it to true
-  vpgl_geo_camera(vnl_matrix<double> trans_matrix, vpgl_lvcs_sptr lvcs)
-    : trans_matrix_(std::move(trans_matrix)), is_utm_(false), scale_tag_(false), sx_(0.0), sy_(0.0){
-    if (lvcs)
-      this->set_lvcs(lvcs);
-  }
+  vpgl_geo_camera(vnl_matrix<double> trans_matrix,
+                  vpgl_lvcs_sptr lvcs,
+                  bool scale_tag=false,
+                  int utm_zone=0,
+                  int south_flag=0,
+                  double sx=0,
+                  double sy=0);
 
   // copy constructor
   vpgl_geo_camera(vpgl_geo_camera const& rhs);
@@ -103,7 +105,9 @@ class vpgl_geo_camera : public vpgl_camera<double>
   void set_lvcs(const vpgl_lvcs* lvcs) {lvcs_ = (lvcs) ? lvcs->clone() : nullptr; }
   void set_lvcs(const vpgl_lvcs_sptr& lvcs) {lvcs_ = (lvcs) ? lvcs->clone() : nullptr; }
 
-  void set_scale_format(bool scale_tag) { scale_tag_=scale_tag; }
+  void set_scale_tag(bool scale_tag) { scale_tag_=scale_tag; }
+  void set_scale_format(bool scale_tag) { this->set_scale_tag(scale_tag); }
+  bool scale_tag() const { return scale_tag_; }
 
   vpgl_lvcs_sptr const lvcs() {return lvcs_;}
 
@@ -212,16 +216,25 @@ class vpgl_geo_camera : public vpgl_camera<double>
   short version() const { return 1; }
 
  private:
-  // x and y pixel spacing in meters
-  double sx_;
-  double sy_;
-  vnl_matrix<double> trans_matrix_;           // 4x4 matrix
+
+  // 4x4 transformation matrix
+  vnl_matrix<double> trans_matrix_;
+
   //: lvcs of world parameters
   vpgl_lvcs_sptr lvcs_ = nullptr;
+
+  // Scale tag
+  bool scale_tag_ = false;
+
+  // UTM parameters
   bool is_utm_ = false;
   int utm_zone_ = 0;
   bool south_flag_ = 0; //0 North, 1 South
-  bool scale_tag_ = false;
+
+  // x and y pixel spacing in meters
+  double sx_ = 0;
+  double sy_ = 0;
+
 };
 
 #if HAS_GEOTIFF

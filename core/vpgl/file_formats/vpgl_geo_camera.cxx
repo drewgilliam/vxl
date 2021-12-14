@@ -25,25 +25,45 @@
 #include <vil/file_formats/vil_nitf2_image.h>
 #endif
 
-vpgl_geo_camera::vpgl_geo_camera(): sx_(0.0), sy_(0.0)
+vpgl_geo_camera::vpgl_geo_camera()
 {
   trans_matrix_.set_size(4, 4);
   trans_matrix_.fill(0);
   trans_matrix_.fill_diagonal(1);
-  is_utm_ = false;
-  scale_tag_ = false;
+}
+
+vpgl_geo_camera::vpgl_geo_camera(vnl_matrix<double> trans_matrix,
+                                 vpgl_lvcs_sptr lvcs,
+                                 bool scale_tag,
+                                 int utm_zone,
+                                 int south_flag,
+                                 double sx,
+                                 double sy)
+  : trans_matrix_(std::move(trans_matrix))
+  , scale_tag_(scale_tag)
+  , sx_(sx)
+  , sy_(sy)
+{
+  this->set_lvcs(lvcs);
+  if (utm_zone > 0) {
+    this->set_utm(utm_zone, south_flag);
+  }
+  if (sx == 0 || sy == 0) {
+    this->extract_pixel_size();
+  }
 }
 
 vpgl_geo_camera::vpgl_geo_camera(vpgl_geo_camera const & rhs)
   : vpgl_camera<double>(rhs)
   , trans_matrix_(rhs.trans_matrix_)
+  , scale_tag_(rhs.scale_tag_)
   , is_utm_(rhs.is_utm_)
   , utm_zone_(rhs.utm_zone_)
   , south_flag_(rhs.south_flag_)
-  , scale_tag_(rhs.scale_tag_)
+  , sx_(rhs.sx_)
+  , sy_(rhs.sy_)
 {
   this->set_lvcs(rhs.lvcs_);
-  rhs.pixel_spacing(sx_, sy_);
 }
 
 
@@ -125,9 +145,15 @@ vpgl_geo_camera::load_from_resource(vil_image_resource_sptr const & geotiff_img,
 
   // update the camera
   this->trans_matrix_ = trans_matrix;
-  this->scale_tag_ = scale_tag;
-  this->is_utm_ = false;
   this->set_lvcs(lvcs);
+  this->scale_tag_ = scale_tag;
+
+  // clear additional parameters
+  this->is_utm_ = false;
+  this->utm_zone_ = 0;
+  this->south_flag_ = false;
+  this->sx_ = 0;
+  this->sy_ = 0;
 
   // check if the model type is geographic and also the units
   if (gtif->GCS_WGS84_MET_DEG()){
@@ -211,12 +237,22 @@ vpgl_geo_camera::load_from_geotransform(std::array<double, 6> geotransform,
 
   // update object
   this->trans_matrix_ = trans_matrix.as_matrix();
-  this->scale_tag_ = true;
-  this->is_utm_ = (utm_zone > 0);
-  this->utm_zone_ = utm_zone;
-  this->south_flag_ = south_flag;
   this->set_lvcs(lvcs);
+  this->scale_tag_ = true;
+
+  // clear additional parameters
+  this->is_utm_ = false;
+  this->utm_zone_ = 0;
+  this->south_flag_ = false;
+  this->sx_ = 0;
+  this->sy_ = 0;
+
+  // populate UTM & pixel size
+  if (utm_zone > 0) {
+    this->set_utm(utm_zone, south_flag);
+  }
   this->extract_pixel_size();
+
   return true;
 }
 
@@ -306,31 +342,8 @@ vpgl_geo_camera::init_geo_camera(const std::string & img_name,
     trans_matrix[1][1] = scale_lat / (nj - 1.0);
     trans_matrix[1][3] = lat - scale_lat - 0.5 / (nj - 1.0);
   }
-  camera = new vpgl_geo_camera(trans_matrix, lvcs);
-  camera->set_scale_format(true);
-  camera->extract_pixel_size();
+  camera = new vpgl_geo_camera(trans_matrix, lvcs, true);
   return true;
-
-#if 0
-    std::string n = name.substr(name.find_first_of('N')+1, name.find_first_of('W'));
-  float lon, lat, scale;
-  std::stringstream str(n); str >> lat;
-  n = name.substr(name.find_first_of('W')+1, name.find_first_of('_'));
-  std::stringstream str2(n); str2 >> lon;
-  n = name.substr(name.find_first_of('x')+1, name.find_last_of('.'));
-  std::stringstream str3(n); str3 >> scale;
-  std::cout << " lat: " << lat << " lon: " << lon << " WARNING: using same scale for both ni and nj: scale:" << scale << std::endl;
-
-  // determine the upper left corner to use a vpgl_geo_cam, subtract from lat
-  std::cout << "upper left corner in the image is: " << lat+scale << " N " << lon << " W\n"
-           << "lower right corner in the image is: " << lat << " N " << lon-scale << " W" << std::endl;
-  vnl_matrix<double> trans_matrix(4,4,0.0);
-  trans_matrix[0][0] = -scale/ni; trans_matrix[1][1] = -scale/nj;
-  trans_matrix[0][3] = lon; trans_matrix[1][3] = lat+scale;
-  camera = new vpgl_geo_camera(trans_matrix, lvcs);
-  camera->set_scale_format(true);
-  return true;
-#endif
 }
 
 // loads a geo_camera from the file and uses global WGS84 coordinates, so no need to convert negative values to
@@ -396,9 +409,7 @@ vpgl_geo_camera::init_geo_camera_from_filename(const std::string & img_name,
   trans_matrix[0][0] = scale / (ni - 1.0);
   trans_matrix[1][1] = -scale / (nj - 1.0);
   trans_matrix[1][3] = lat + scale + 0.5 / (nj - 1.0);
-  camera = new vpgl_geo_camera(trans_matrix, lvcs);
-  camera->set_scale_format(true);
-  camera->extract_pixel_size();
+  camera = new vpgl_geo_camera(trans_matrix, lvcs, true);
   return true;
 }
 
@@ -428,16 +439,15 @@ vpgl_geo_camera::init_geo_camera(const std::string & tfw_name,
   ifs >> trans_matrix[0][3];
   ifs >> trans_matrix[1][3];
   trans_matrix[3][3] = 1.0;
-
-  camera = new vpgl_geo_camera(trans_matrix, lvcs);
-  if (utm_zone != 0)
-    camera->set_utm(utm_zone, south_flag);
-  camera->set_scale_format(true);
-  camera->extract_pixel_size();
   ifs.close();
+
+  camera = new vpgl_geo_camera(trans_matrix, lvcs, true, utm_zone, south_flag);
   return true;
 }
-void vpgl_geo_camera::extract_pixel_size(){
+
+void
+vpgl_geo_camera::extract_pixel_size()
+{
   if(is_utm_ && this->scale_tag_){
     sx_ = trans_matrix_[0][0];
     sy_ = fabs(trans_matrix_[1][1]);//can be negative
@@ -981,6 +991,7 @@ vpgl_geo_camera::b_read(vsl_b_istream & is)
       south_flag_ = northing;
 
       vsl_b_read(is, scale_tag_);
+      this->extract_pixel_size();
       break;
     }
 
