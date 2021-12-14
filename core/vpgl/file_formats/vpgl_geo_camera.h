@@ -14,6 +14,7 @@
 
 #include <iosfwd>
 #include <utility>
+#include <array>
 
 #include <vector>
 #ifdef _MSC_VER
@@ -109,7 +110,8 @@ class vpgl_geo_camera : public vpgl_camera<double>
   void set_scale_format(bool scale_tag) { this->set_scale_tag(scale_tag); }
   bool scale_tag() const { return scale_tag_; }
 
-  vpgl_lvcs_sptr const lvcs() {return lvcs_;}
+  bool has_lvcs() const { return bool(lvcs_); }
+  vpgl_lvcs_sptr const lvcs() const {return lvcs_;}
 
   double lvcs_elev_origin() const;
 

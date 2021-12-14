@@ -1,6 +1,6 @@
 // This is core/vpgl/file_formats/vpgl_geo_camera.cxx
 #include <vector>
-#include <array>
+#include <fstream>
 #include <stdexcept>
 #include "vpgl_geo_camera.h"
 //:
