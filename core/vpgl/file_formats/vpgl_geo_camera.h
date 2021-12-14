@@ -74,7 +74,7 @@ class vpgl_geo_camera : public vpgl_camera<double>
   //: Load camera from GDAL geotransform
   bool load_from_geotransform(std::array<double, 6> geotransform,
                               int utm_zone = -1,
-                              int northing = 0, //0 North, 1 South
+                              int south_flag = 0, //0 North, 1 South
                               const vpgl_lvcs *lvcs=nullptr);
 
   //: warning, use this camera cautiously, the output of img_to_global method needs to be adjusted sign wise
@@ -86,19 +86,19 @@ class vpgl_geo_camera : public vpgl_camera<double>
   static bool init_geo_camera_from_filename(const std::string& img_name, unsigned ni, unsigned nj, const vpgl_lvcs_sptr& lvcs, vpgl_geo_camera*& camera);
 
   //: init using a tfw file, reads the transformation matrix from the tfw
-  static bool init_geo_camera(const std::string& tfw_name, const vpgl_lvcs_sptr& lvcs, int utm_zone, unsigned northing, vpgl_geo_camera*& camera);
+  static bool init_geo_camera(const std::string& tfw_name, const vpgl_lvcs_sptr& lvcs, int utm_zone, unsigned south_flag, vpgl_geo_camera*& camera);
 
   //: init without lvcs. Assumes geographic coordinates are global
-  static bool init_geo_camera(std::string tfw_name,  int utm_zone, unsigned northing, vpgl_geo_camera*& camera){
+  static bool init_geo_camera(std::string tfw_name,  int utm_zone, unsigned south_flag, vpgl_geo_camera*& camera){
     vpgl_lvcs_sptr lvcs = nullptr;
-    return init_geo_camera(tfw_name, lvcs, utm_zone, northing, camera);
+    return init_geo_camera(tfw_name, lvcs, utm_zone, south_flag, camera);
   }
   ~vpgl_geo_camera() override = default;
 
   std::string type_name() const override { return "vpgl_geo_camera"; }
 
-  //northing=0 means North, 1 is south
-  void set_utm(int utm_zone, unsigned northing) { is_utm_=true, utm_zone_=utm_zone; northing_=northing; }
+  //south_flag=0 means North, 1 is south
+  void set_utm(int utm_zone, unsigned south_flag) { is_utm_=true, utm_zone_=utm_zone; south_flag_=south_flag; }
 
   void set_lvcs(const vpgl_lvcs* lvcs) {lvcs_ = (lvcs) ? lvcs->clone() : nullptr; }
   void set_lvcs(const vpgl_lvcs_sptr& lvcs) {lvcs_ = (lvcs) ? lvcs->clone() : nullptr; }
@@ -183,7 +183,8 @@ class vpgl_geo_camera : public vpgl_camera<double>
   void local_to_utm(const double x, const double y, const double z, double& e, double& n, int& utm_zone) const;
 
   int utm_zone() const { return utm_zone_; }
-  int utm_northing() const { return northing_; }
+  bool south_flag() const { return south_flag_; }
+  int utm_northing() const { return south_flag_; }
 
   bool img_four_corners_in_utm(const unsigned ni, const unsigned nj, double elev, double& e1, double& n1, double& e2, double& n2) const;
 
@@ -219,7 +220,7 @@ class vpgl_geo_camera : public vpgl_camera<double>
   vpgl_lvcs_sptr lvcs_ = nullptr;
   bool is_utm_ = false;
   int utm_zone_ = 0;
-  int northing_ = 0; //0 North, 1 South
+  bool south_flag_ = 0; //0 North, 1 South
   bool scale_tag_ = false;
 };
 
@@ -240,7 +241,7 @@ load_geo_camera_from_resource(vil_image_resource_sptr const& geotiff_img,
 vpgl_geo_camera
 load_geo_camera_from_geotransform(std::array<double, 6> geotransform,
                                   int utm_zone = -1,
-                                  int northing = 0, //0 North, 1 South
+                                  int south_flag = 0, //0 North, 1 South
                                   const vpgl_lvcs* lvcs = nullptr);
 
 

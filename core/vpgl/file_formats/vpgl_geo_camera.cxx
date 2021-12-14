@@ -39,7 +39,7 @@ vpgl_geo_camera::vpgl_geo_camera(vpgl_geo_camera const & rhs)
   , trans_matrix_(rhs.trans_matrix_)
   , is_utm_(rhs.is_utm_)
   , utm_zone_(rhs.utm_zone_)
-  , northing_(rhs.northing_)
+  , south_flag_(rhs.south_flag_)
   , scale_tag_(rhs.scale_tag_)
 {
   this->set_lvcs(rhs.lvcs_);
@@ -129,8 +129,6 @@ vpgl_geo_camera::load_from_resource(vil_image_resource_sptr const & geotiff_img,
   this->is_utm_ = false;
   this->set_lvcs(lvcs);
 
-  
-
   // check if the model type is geographic and also the units
   if (gtif->GCS_WGS84_MET_DEG()){
     this->extract_pixel_size();
@@ -196,7 +194,7 @@ vpgl_geo_camera::init_geo_camera(vil_image_resource_sptr const & geotiff_img,
 bool
 vpgl_geo_camera::load_from_geotransform(std::array<double, 6> geotransform,
                                         int utm_zone,
-                                        int northing,
+                                        int south_flag,
                                         const vpgl_lvcs *lvcs)
 {
   vnl_matrix_fixed<double, 4, 4> trans_matrix;
@@ -216,7 +214,7 @@ vpgl_geo_camera::load_from_geotransform(std::array<double, 6> geotransform,
   this->scale_tag_ = true;
   this->is_utm_ = (utm_zone > 0);
   this->utm_zone_ = utm_zone;
-  this->northing_ = northing;
+  this->south_flag_ = south_flag;
   this->set_lvcs(lvcs);
   this->extract_pixel_size();
   return true;
@@ -410,7 +408,7 @@ bool
 vpgl_geo_camera::init_geo_camera(const std::string & tfw_name,
                                  const vpgl_lvcs_sptr & lvcs,
                                  int utm_zone,
-                                 unsigned northing,
+                                 unsigned south_flag,
                                  vpgl_geo_camera *& camera)
 {
 
@@ -433,7 +431,7 @@ vpgl_geo_camera::init_geo_camera(const std::string & tfw_name,
 
   camera = new vpgl_geo_camera(trans_matrix, lvcs);
   if (utm_zone != 0)
-    camera->set_utm(utm_zone, northing);
+    camera->set_utm(utm_zone, south_flag);
   camera->set_scale_format(true);
   camera->extract_pixel_size();
   ifs.close();
@@ -467,6 +465,7 @@ void vpgl_geo_camera::extract_pixel_size(){
                          vpgl_lvcs::wgs84, dlx1, dly1, dlz);
   sy_ = sqrt((dlx1-dlx0)*(dlx1-dlx0) + (dly1-dly0) * (dly1-dly0))/100000.0;
 }
+
 //: transforms a given local 3d world point to global geo coordinates
 void
 vpgl_geo_camera::local_to_global(double lx, double ly, double lz, double & gx, double & gy, double & gz) const
@@ -656,8 +655,7 @@ vpgl_geo_camera::img_to_global(const double i, const double j, double & lon, dou
   {
     vpgl_utm utm;
     double elev = 0.0;
-    bool south_flag = northing_ > 0;
-    utm.transform(utm_zone_, v[0], v[1], v[2], lat, lon, elev, south_flag);
+    utm.transform(utm_zone_, v[0], v[1], v[2], lat, lon, elev, south_flag_);
   }
   else
   {
@@ -847,7 +845,7 @@ operator<<(std::ostream & s, vpgl_geo_camera const & p)
     s << "geocam is using wgs84 deg/meters\n";
   } else {
     s << "geocam is using UTM with zone " << p.utm_zone_ << '\n';
-    if (p.northing_) {
+    if (p.south_flag_) {
       s << "southern zone\n";
     } else {
       s << "northern zone\n";
@@ -949,7 +947,7 @@ vpgl_geo_camera::b_write(vsl_b_ostream & os) const
   lvcs_->b_write(os);
   vsl_b_write(os, is_utm_);
   vsl_b_write(os, utm_zone_);
-  vsl_b_write(os, northing_);
+  vsl_b_write(os, int(south_flag_));
   vsl_b_write(os, scale_tag_);
 }
 
@@ -977,7 +975,11 @@ vpgl_geo_camera::b_read(vsl_b_istream & is)
       lvcs_->b_read(is);
       vsl_b_read(is, is_utm_);
       vsl_b_read(is, utm_zone_);
-      vsl_b_read(is, northing_);
+
+      int northing;
+      vsl_b_read(is, northing);
+      south_flag_ = northing;
+
       vsl_b_read(is, scale_tag_);
       break;
     }
@@ -1020,11 +1022,11 @@ load_geo_camera_from_resource(vil_image_resource_sptr const& geotiff_img,
 vpgl_geo_camera
 load_geo_camera_from_geotransform(std::array<double, 6> geotransform,
                                   int utm_zone,
-                                  int northing,
+                                  int south_flag,
                                   const vpgl_lvcs* lvcs)
 {
   vpgl_geo_camera camera;
-  if (!camera.load_from_geotransform(geotransform, utm_zone, northing, lvcs))
+  if (!camera.load_from_geotransform(geotransform, utm_zone, south_flag, lvcs))
     throw std::runtime_error("Failed to load vpgl_geo_camera from geotransform");
   return camera;
 }
