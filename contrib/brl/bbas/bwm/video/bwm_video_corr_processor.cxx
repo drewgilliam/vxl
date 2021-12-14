@@ -2,6 +2,7 @@
 #include <cmath>
 #include <cstdio>
 #include <utility>
+#include <fstream>
 #include "bwm_video_corr_processor.h"
 //:
 // \file

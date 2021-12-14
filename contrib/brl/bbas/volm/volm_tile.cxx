@@ -14,6 +14,7 @@
 #include <bkml/bkml_write.h>
 #include "vpgl/vpgl_utm.h"
 #include "vul/vul_file.h"
+#include <vpgl/file_formats/io/vpgl_io_geo_camera.h>
 
 //: specify lat lon in positive numbers but specify hemisphere ('N' or 'S') and direction ('W' or 'E')
 volm_tile::volm_tile(float lat, float lon, char hemisphere, char direction, float scale_i, float scale_j, unsigned ni, unsigned nj) :
@@ -738,7 +739,7 @@ void volm_tile::b_write(vsl_b_ostream &os) const
   vsl_b_write(os, scale_j_);
   vsl_b_write(os, ni_);
   vsl_b_write(os, nj_);
-  cam_.b_write(os);
+  vsl_b_write(os, cam_);
 }
 
 //: Binary load self from stream.
@@ -758,12 +759,12 @@ void volm_tile::b_read(vsl_b_istream &is)
     vsl_b_read(is, scale_j_);
     vsl_b_read(is, ni_);
     vsl_b_read(is, nj_);
-    cam_.b_read(is);
+    vsl_b_read(is, cam_);
     break;
 
    default:
-    std::cerr << "I/O ERROR: vpgl_geo_camera::b_read(vsl_b_istream&)\n"
-             << "           Unknown version number "<< ver << '\n';
+    std::cerr << "I/O ERROR: volm_tile::b_read(vsl_b_istream&)\n"
+              << "           Unknown version number "<< ver << '\n';
     is.is().clear(std::ios::badbit); // Set an unrecoverable IO error on stream
     return;
   }

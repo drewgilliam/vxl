@@ -26,6 +26,7 @@
 #include <vbl/vbl_array_2d.h>
 #include <vil/vil_image_view.h>
 #include <vgl/vgl_box_2d.h>
+#include <vsl/vsl_binary_io.h>
 
 class volm_tile
 {
