@@ -206,15 +206,6 @@ class vpgl_geo_camera : public vpgl_camera<double>
                   unsigned& i, unsigned& j);
 #endif // 0
 
-  //: Binary save self to stream.
-  void b_write(vsl_b_ostream &os) const;
-
-  //: Binary load self from stream.
-  void b_read(vsl_b_istream &is);
-
-  //: Return IO version number;
-  short version() const { return 1; }
-
  private:
 
   // 4x4 transformation matrix

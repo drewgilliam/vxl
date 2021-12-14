@@ -21,6 +21,8 @@ vxl_add_library(LIBRARY_NAME ${VXL_LIB_PREFIX}vpgl_file_formats LIBRARY_SOURCES 
 
 target_link_libraries(${VXL_LIB_PREFIX}vpgl_file_formats ${VXL_LIB_PREFIX}vpgl ${VXL_LIB_PREFIX}vil ${VXL_LIB_PREFIX}vnl)
 
+add_subdirectory(io)
+
 if( BUILD_TESTING )
   add_subdirectory(tests)
 endif()

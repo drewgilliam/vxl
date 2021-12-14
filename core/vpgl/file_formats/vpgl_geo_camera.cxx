@@ -837,9 +837,25 @@ vpgl_geo_camera::img_four_corners_in_utm(const unsigned ni,
 
 
 bool
-vpgl_geo_camera::operator==(vpgl_geo_camera const & rhs) const
+vpgl_geo_camera::operator==(vpgl_geo_camera const & that) const
 {
-  return this->trans_matrix_ == rhs.trans_matrix_ && *(this->lvcs_) == *(rhs.lvcs_);
+  // lvcs - shallow pointer equality
+  bool lvcs_equal = this->lvcs_ == that.lvcs_;
+
+  // lvcs - value equality for non-nullptr
+  if (!lvcs_equal && this->lvcs_ && that.lvcs_) {
+    lvcs_equal = *(this->lvcs_) == *(that.lvcs_);
+  }
+
+  // full comparison
+  return lvcs_equal &&
+         this->trans_matrix_ == that.trans_matrix_ &&
+         this->scale_tag_ == that.scale_tag_ &&
+         this->is_utm_ == that.is_utm_ &&
+         this->utm_zone_ == that.utm_zone_ &&
+         this->south_flag_ == that.south_flag_ &&
+         this->sx_ == that.sx_ &&
+         this->sy_ == that.sy_ ;
 }
 
 //: Write vpgl_geo_camera to stream
@@ -941,66 +957,6 @@ vpgl_geo_camera::img_to_wgs(unsigned /*i*/,
                             double & /*elev*/) const
 {
   assert(!"Not yet implemented");
-}
-
-//: Binary save self to stream.
-void
-vpgl_geo_camera::b_write(vsl_b_ostream & os) const
-{
-  vsl_b_write(os, version());
-  vsl_b_write(os, trans_matrix_.rows());
-  vsl_b_write(os, trans_matrix_.cols());
-  for (unsigned i = 0; i < trans_matrix_.rows(); i++)
-    for (unsigned j = 0; j < trans_matrix_.cols(); j++)
-      vsl_b_write(os, trans_matrix_[i][j]);
-
-  lvcs_->b_write(os);
-  vsl_b_write(os, is_utm_);
-  vsl_b_write(os, utm_zone_);
-  vsl_b_write(os, int(south_flag_));
-  vsl_b_write(os, scale_tag_);
-}
-
-
-//: Binary load self from stream.
-void
-vpgl_geo_camera::b_read(vsl_b_istream & is)
-{
-  if (!is)
-    return;
-  short ver;
-  vsl_b_read(is, ver);
-  switch (ver)
-  {
-    case 1: {
-      unsigned nrows, ncols;
-      vsl_b_read(is, nrows);
-      vsl_b_read(is, ncols);
-      trans_matrix_.set_size(nrows, ncols);
-      for (unsigned i = 0; i < nrows; i++)
-        for (unsigned j = 0; j < ncols; j++)
-          vsl_b_read(is, trans_matrix_[i][j]);
-
-      vpgl_lvcs_sptr lvcs_ = new vpgl_lvcs(0, 0, 0);
-      lvcs_->b_read(is);
-      vsl_b_read(is, is_utm_);
-      vsl_b_read(is, utm_zone_);
-
-      int northing;
-      vsl_b_read(is, northing);
-      south_flag_ = northing;
-
-      vsl_b_read(is, scale_tag_);
-      this->extract_pixel_size();
-      break;
-    }
-
-    default:
-      std::cerr << "I/O ERROR: vpgl_geo_camera::b_read(vsl_b_istream&)\n"
-                << "           Unknown version number " << ver << '\n';
-      is.is().clear(std::ios::badbit); // Set an unrecoverable IO error on stream
-      return;
-  }
 }
 
 #if HAS_GEOTIFF
