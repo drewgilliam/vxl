@@ -966,6 +966,7 @@ vpgl_lvcs::operator==(vpgl_lvcs const & r) const
     eq = eq && (this->localUTMOrigin_X_East_ == r.localUTMOrigin_X_East_);
     eq = eq && (this->localUTMOrigin_Y_North_ == r.localUTMOrigin_Y_North_);
     eq = eq && (this->localUTMOrigin_Zone_ == r.localUTMOrigin_Zone_);
+    eq = eq && (this->localUTMOrigin_SouthFlag_ == r.localUTMOrigin_SouthFlag_);
   }
 
   return eq;
