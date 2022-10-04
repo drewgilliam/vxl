@@ -14,7 +14,8 @@ vpgl_affine_tri_focal_tensor<Type>::set(const vpgl_affine_camera<Type> & c1,
   vpgl_proj_camera<Type> p1, p2, p3;
   if (!proj(c1, p1) || !proj(c2, p2) || !proj(c3, p3))
   {
-    throw std::invalid_argument("vpgl_affine_tri_focal_tensor: affine->projective failed");
+    throw std::invalid_argument("vpgl_affine_tri_focal_tensor::set "
+                                "affine->projective failed");
   }
   vpgl_tri_focal_tensor<Type>::set(p1, p2, p3);
 }

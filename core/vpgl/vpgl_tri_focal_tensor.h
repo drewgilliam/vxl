@@ -146,7 +146,7 @@ class vpgl_tri_focal_tensor
   {
     return (this->compute_epipoles() &&
             this->compute_f_matrices() &&
-            this->compute_proj_cameras() &&
+            this->compute_cameras() &&
             this->compute_f_matrix_23());
   }
 
@@ -266,33 +266,35 @@ class vpgl_tri_focal_tensor
   hmatrix_12(vgl_homg_line_2d<Type> const & line3) const;
 
   //: epipoles
-  virtual bool
-  get_epipoles(vgl_homg_point_2d<Type> & e12,
-               vgl_homg_point_2d<Type> & e13)
-  {
-    if (!epipoles_valid_)
-      compute_epipoles();
-    e12 = e12_;
-    e13 = e13_;
-    return epipoles_valid_;
-  }
-
   bool
   compute_epipoles();
 
-  virtual vgl_homg_point_2d<Type>
-  epipole_12()
+  virtual void
+  get_epipoles(vgl_homg_point_2d<Type> & e12,
+               vgl_homg_point_2d<Type> & e13) const
   {
     if (!epipoles_valid_)
-      compute_epipoles();
+      throw std::runtime_error("vpgl_tri_focal_tensor::get_epipoles "
+                               "invalid epipoles");
+    e12 = e12_;
+    e13 = e13_;
+  }
+
+  virtual vgl_homg_point_2d<Type>
+  epipole_12() const
+  {
+    if (!epipoles_valid_)
+      throw std::runtime_error("vpgl_tri_focal_tensor::epipole_12 "
+                               "invalid epipoles");
     return e12_;
   }
 
   virtual vgl_homg_point_2d<Type>
-  epipole_13()
+  epipole_13() const
   {
     if (!epipoles_valid_)
-      compute_epipoles();
+      throw std::runtime_error("vpgl_tri_focal_tensor::epipole_13 "
+                               "invalid epipoles");
     return e13_;
   }
 
@@ -309,53 +311,60 @@ class vpgl_tri_focal_tensor
   compute_f_matrix_23();
 
   vpgl_fundamental_matrix<Type>
-  fmatrix_12()
+  fmatrix_12() const
   {
     if (!f_matrices_1213_valid_)
-      compute_f_matrices();
+      throw std::runtime_error("vpgl_tri_focal_tensor::fmatrix_12 "
+                               "invalid fundamental matrices");
     return f12_;
   }
 
   vpgl_fundamental_matrix<Type>
-  fmatrix_13()
+  fmatrix_13() const
   {
     if (!f_matrices_1213_valid_)
-      compute_f_matrices();
+      throw std::runtime_error("vpgl_tri_focal_tensor::fmatrix_13 "
+                               "invalid fundamental matrices");
     return f13_;
   }
 
   vpgl_fundamental_matrix<Type>
-  fmatrix_23()
+  fmatrix_23() const
   {
     if (!f_matrix_23_valid_)
-      compute_f_matrix_23();
+      throw std::runtime_error("vpgl_tri_focal_tensor::fmatrix_23 "
+                               "invalid fundamental matrices");
     return f23_;
   }
 
+  //: cameras
   bool
-  compute_proj_cameras();
+  compute_cameras();
 
   vpgl_proj_camera<Type>
-  proj_camera_1()
+  proj_camera_1() const
   {
     if (!cameras_valid_)
-      compute_proj_cameras();
+      throw std::runtime_error("vpgl_tri_focal_tensor::proj_camera_1 "
+                               "invalid projective cameras");
     return c1_;
   }
 
   vpgl_proj_camera<Type>
-  proj_camera_2()
+  proj_camera_2() const
   {
     if (!cameras_valid_)
-      compute_proj_cameras();
+      throw std::runtime_error("vpgl_tri_focal_tensor::proj_camera_2 "
+                               "invalid projective cameras");
     return c2_;
   }
 
   vpgl_proj_camera<Type>
-  proj_camera_3()
+  proj_camera_3() const
   {
     if (!cameras_valid_)
-      compute_proj_cameras();
+      throw std::runtime_error("vpgl_tri_focal_tensor::proj_camera_3 "
+                               "invalid projective cameras");
     return c3_;
   }
 
