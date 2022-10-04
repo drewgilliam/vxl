@@ -80,7 +80,7 @@ vpgl_tri_focal_tensor<Type>::normalize()
 
 template <class Type>
 bool
-vpgl_tri_focal_tensor<Type>::compute_proj_cameras()
+vpgl_tri_focal_tensor<Type>::compute_cameras()
 {
   if (cameras_valid_)
     return true;

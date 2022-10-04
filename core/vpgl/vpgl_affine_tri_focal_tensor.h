@@ -441,7 +441,7 @@ class vpgl_affine_tri_focal_tensor : protected vpgl_tri_focal_tensor<Type>
   affine_camera_1(vpgl_affine_camera<Type> & c1)
   {
     if (!vpgl_tri_focal_tensor<Type>::cameras_valid_)
-      vpgl_tri_focal_tensor<Type>::compute_proj_cameras();
+      vpgl_tri_focal_tensor<Type>::compute_cameras();
     vpgl_affine_camera<Type> ac;
     return affine(vpgl_tri_focal_tensor<Type>::c1_, c1);
   }
@@ -450,7 +450,7 @@ class vpgl_affine_tri_focal_tensor : protected vpgl_tri_focal_tensor<Type>
   affine_camera_2(vpgl_affine_camera<Type> & c2)
   {
     if (!vpgl_tri_focal_tensor<Type>::cameras_valid_)
-      vpgl_tri_focal_tensor<Type>::compute_proj_cameras();
+      vpgl_tri_focal_tensor<Type>::compute_cameras();
     vpgl_affine_camera<Type> ac;
     return affine(vpgl_tri_focal_tensor<Type>::c2_, c2);
   }
@@ -459,7 +459,7 @@ class vpgl_affine_tri_focal_tensor : protected vpgl_tri_focal_tensor<Type>
   affine_camera_3(vpgl_affine_camera<Type> & c3)
   {
     if (!vpgl_tri_focal_tensor<Type>::cameras_valid_)
-      vpgl_tri_focal_tensor<Type>::compute_proj_cameras();
+      vpgl_tri_focal_tensor<Type>::compute_cameras();
     vpgl_affine_camera<Type> ac;
     return affine(vpgl_tri_focal_tensor<Type>::c3_, c3);
   }

@@ -81,8 +81,8 @@ test_tri_focal_tensor()
   bool good_epipoles = T.compute_epipoles();
   bool good_f_matrices = T.compute_f_matrices();
   bool good_f23 = T.compute_f_matrix_23();
-  bool good_p_cams = T.compute_proj_cameras();
-  TEST("Good Computations", good_epipoles && good_f_matrices && good_f23 && good_p_cams, true);
+  bool good_cams = T.compute_cameras();
+  TEST("Good Computations", good_epipoles && good_f_matrices && good_f23 && good_cams, true);
   vgl_homg_point_2d<double> e12, e13;
   T.get_epipoles(e12, e13);
   std::cout << "e12 " << e12 << " e13 " << e13 << std::endl;

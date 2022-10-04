@@ -152,7 +152,7 @@ class vpgl_tri_focal_tensor
   {
     return (this->compute_epipoles() &&
             this->compute_f_matrices() &&
-            this->compute_proj_cameras() &&
+            this->compute_cameras() &&
             this->compute_f_matrix_23());
   }
 
@@ -332,54 +332,60 @@ class vpgl_tri_focal_tensor
   compute_f_matrix_23();
 
   vpgl_fundamental_matrix<Type>
-  fmatrix_12()
+  fmatrix_12() const
   {
     if (!f_matrices_1213_valid_)
-      compute_f_matrices();
+      throw std::runtime_error("vpgl_tri_focal_tensor::fmatrix_12 "
+                               "fundamental matrices are not computed");
     return f12_;
   }
 
   vpgl_fundamental_matrix<Type>
-  fmatrix_13()
+  fmatrix_13() const
   {
     if (!f_matrices_1213_valid_)
-      compute_f_matrices();
+      throw std::runtime_error("vpgl_tri_focal_tensor::fmatrix_13 "
+                               "fundamental matrices are not computed");
     return f13_;
   }
 
   vpgl_fundamental_matrix<Type>
-  fmatrix_23()
+  fmatrix_23() const
   {
     if (!f_matrix_23_valid_)
-      compute_f_matrix_23();
+      throw std::runtime_error("vpgl_tri_focal_tensor::fmatrix_23 "
+                               "fundamental matrices are not computed");
     return f23_;
   }
 
   //: projective cameras
   bool
-  compute_proj_cameras();
+  compute_cameras();
 
   vpgl_proj_camera<Type>
-  proj_camera_1()
+  proj_camera_1() const
   {
     if (!cameras_valid_)
-      compute_proj_cameras();
+      throw std::runtime_error("vpgl_tri_focal_tensor::proj_camera_1 "
+                               "cameras are not computed");
     return c1_;
   }
 
   vpgl_proj_camera<Type>
-  proj_camera_2()
+  proj_camera_2() const
   {
     if (!cameras_valid_)
-      compute_proj_cameras();
+      throw std::runtime_error("vpgl_tri_focal_tensor::proj_camera_2 "
+                               "cameras are not computed");
     return c2_;
   }
 
   vpgl_proj_camera<Type>
-  proj_camera_3()
+  proj_camera_3() const
   {
     if (!cameras_valid_)
-      compute_proj_cameras();
+      throw std::runtime_error("vpgl_tri_focal_tensor::proj_camera_3 "
+                               "cameras are not computed");
     return c3_;
   }
 
