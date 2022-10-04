@@ -289,30 +289,32 @@ class vpgl_tri_focal_tensor
   bool
   compute_epipoles();
 
-  virtual bool
+  virtual void
   get_epipoles(vgl_homg_point_2d<Type> & e12,
-               vgl_homg_point_2d<Type> & e13)
+               vgl_homg_point_2d<Type> & e13) const
   {
     if (!epipoles_valid_)
-      compute_epipoles();
+      throw std::runtime_error("vpgl_tri_focal_tensor::get_epipoles "
+                               "epipoles are not computed");
     e12 = e12_;
     e13 = e13_;
-    return epipoles_valid_;
   }
 
   virtual vgl_homg_point_2d<Type>
-  epipole_12()
+  epipole_12() const
   {
     if (!epipoles_valid_)
-      compute_epipoles();
+      throw std::runtime_error("vpgl_tri_focal_tensor::epipole_12 "
+                               "epipoles are not computed");
     return e12_;
   }
 
   virtual vgl_homg_point_2d<Type>
-  epipole_13()
+  epipole_13() const
   {
     if (!epipoles_valid_)
-      compute_epipoles();
+      throw std::runtime_error("vpgl_tri_focal_tensor::epipole_13 "
+                               "epipoles are not computed");
     return e13_;
   }
 

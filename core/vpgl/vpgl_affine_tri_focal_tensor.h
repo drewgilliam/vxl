@@ -342,29 +342,25 @@ class vpgl_affine_tri_focal_tensor : protected vpgl_tri_focal_tensor<Type>
   }
 
   //: epipoles
-  bool
+  void
   get_epipoles(vgl_homg_point_2d<Type> & e12,
-               vgl_homg_point_2d<Type> & e13) override
+               vgl_homg_point_2d<Type> & e13) const override
   {
     vgl_homg_point_2d<Type> temp12, temp13;
-    bool good = vpgl_tri_focal_tensor<Type>::get_epipoles(temp12, temp13);
-    if (good)
-    {
-      e12 = img_pt_transforms_[1].preimage(temp12);
-      e13 = img_pt_transforms_[2].preimage(temp13);
-    }
-    return good;
+    vpgl_tri_focal_tensor<Type>::get_epipoles(temp12, temp13);
+    e12 = img_pt_transforms_[1].preimage(temp12);
+    e13 = img_pt_transforms_[2].preimage(temp13);
   }
 
   vgl_homg_point_2d<Type>
-  epipole_12() override
+  epipole_12() const override
   {
     vgl_homg_point_2d<Type> temp = vpgl_tri_focal_tensor<Type>::epipole_12();
     return img_pt_transforms_[1].preimage(temp);
   }
 
   vgl_homg_point_2d<Type>
-  epipole_13() override
+  epipole_13() const override
   {
     vgl_homg_point_2d<Type> temp = vpgl_tri_focal_tensor<Type>::epipole_13();
     return img_pt_transforms_[2].preimage(temp);
