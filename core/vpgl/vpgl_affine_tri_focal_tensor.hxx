@@ -48,6 +48,17 @@ affine(vpgl_proj_camera<Type> const & pcam, vpgl_affine_camera<Type> & acam)
 }
 
 template <class Type>
+vpgl_affine_camera<Type>
+affine(vpgl_proj_camera<Type> const & pcam)
+{
+  vpgl_affine_camera<Type> acam;
+  if (!affine(pcam, acam))
+    throw std::runtime_error("Cannot convert from projective to "
+                             "affine camera");
+  return acam;
+}
+
+template <class Type>
 bool
 proj(vpgl_affine_camera<Type> const & acam, vpgl_proj_camera<Type> & pcam)
 {
@@ -70,6 +81,17 @@ proj(vpgl_affine_camera<Type> const & acam, vpgl_proj_camera<Type> & pcam)
 }
 
 template <class Type>
+vpgl_proj_camera<Type>
+proj(vpgl_affine_camera<Type> const & acam)
+{
+  vpgl_proj_camera<Type> pcam;
+  if (!proj(acam, pcam))
+    throw std::runtime_error("Cannot convert from affine to "
+                             "projective camera");
+  return pcam;
+}
+
+template <class Type>
 bool
 affine(vpgl_fundamental_matrix<Type> const & F, vpgl_affine_fundamental_matrix<Type> & aF)
 {
@@ -85,6 +107,17 @@ affine(vpgl_fundamental_matrix<Type> const & F, vpgl_affine_fundamental_matrix<T
         return false;
   aF.set_matrix(M);
   return true;
+}
+
+template <class Type>
+vpgl_affine_fundamental_matrix<Type>
+affine(vpgl_fundamental_matrix<Type> const & F)
+{
+  vpgl_affine_fundamental_matrix<Type> aF;
+  if (!affine(F, aF))
+    throw std::runtime_error("Cannot convert from projective to "
+                             "affine fundamental matrix");
+  return aF;
 }
 
 template <class Type>
@@ -113,6 +146,9 @@ operator>>(std::istream & istr, vpgl_affine_tri_focal_tensor<Type> & aT)
   template std::ostream & operator<<(std::ostream &, const vpgl_affine_tri_focal_tensor<Type> &);                      \
   template std::istream & operator>>(std::istream &, vpgl_affine_tri_focal_tensor<Type> &);                            \
   template bool affine(vpgl_proj_camera<Type> const &, vpgl_affine_camera<Type> &);                                    \
+  template vpgl_affine_camera<Type> affine(vpgl_proj_camera<Type> const &);                                            \
   template bool proj(vpgl_affine_camera<Type> const &, vpgl_proj_camera<Type> &);                                      \
-  template bool affine(vpgl_fundamental_matrix<Type> const &, vpgl_affine_fundamental_matrix<Type> &)
+  template vpgl_proj_camera<Type> proj(vpgl_affine_camera<Type> const &);                                              \
+  template bool affine(vpgl_fundamental_matrix<Type> const &, vpgl_affine_fundamental_matrix<Type> &);                 \
+  template vpgl_affine_fundamental_matrix<Type> affine(vpgl_fundamental_matrix<Type> const &)
 #endif // vpgl_affine_tri_focal_tensor_hxx_

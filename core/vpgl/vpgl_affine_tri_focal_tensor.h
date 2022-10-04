@@ -497,16 +497,28 @@ bool
 affine(vpgl_proj_camera<Type> const & pcam,
        vpgl_affine_camera<Type> & acam);
 
+template <class Type>
+vpgl_affine_camera<Type>
+affine(vpgl_proj_camera<Type> const & pcam);
+
 //: convert affine camera to projective camera swap last two cols (check if valid)
 template <class Type>
 bool
 proj(vpgl_affine_camera<Type> const & acam,
      vpgl_proj_camera<Type> & pcam);
 
+template <class Type>
+vpgl_proj_camera<Type>
+proj(vpgl_affine_camera<Type> const & acam);
+
 //: convert projective fundamental matrix to affine fundamental matrix - perform check
 template <class Type>
 bool
 affine(vpgl_fundamental_matrix<Type> const & F,
        vpgl_affine_fundamental_matrix<Type> & aF);
+
+template <class Type>
+vpgl_affine_fundamental_matrix<Type>
+affine(vpgl_fundamental_matrix<Type> const & F);
 
 #endif
