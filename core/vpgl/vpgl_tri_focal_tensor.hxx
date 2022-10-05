@@ -27,30 +27,46 @@ epsilon(size_t i, size_t j, size_t k)
 
 template <class Type>
 void
-vpgl_tri_focal_tensor<Type>::init()
+vpgl_tri_focal_tensor<Type>::clear_tensor()
 {
-  // epipoles
+  T_.resize(3,3,3);
+  T_.fill(Type(0));
+  for (size_t i = 0; i < 3; ++i)
+    T_[i][i][i] = Type(1);
+}
+
+template <class Type>
+void
+vpgl_tri_focal_tensor<Type>::clear_epipoles()
+{
   epipoles_valid_ = false;
   e12_.set(Type(0), Type(0), Type(0));
   e13_.set(Type(0), Type(0), Type(0));
-
-  // cameras
-  if (!cameras_valid_)
-  {
-    vnl_matrix_fixed<Type, 3, 4> c_invalid(Type(0));
-    c1_.set_matrix(c_invalid);
-    c2_.set_matrix(c_invalid);
-    c3_.set_matrix(c_invalid);
-  }
-  // fundamental matrices
-  f_matrices_1213_valid_ = false;
-  vnl_matrix_fixed<Type, 3, 3> f_invalid(Type(0));
-  f12_.set_matrix(f_invalid);
-  f13_.set_matrix(f_invalid);
-
-  f_matrix_23_valid_ = false;
-  f23_.set_matrix(f_invalid);
 }
+
+template <class Type>
+void
+vpgl_tri_focal_tensor<Type>::clear_f_matrices()
+{
+  f_matrices_1213_valid_ = false;
+  f_matrix_23_valid_ = false;
+  vnl_matrix_fixed<Type, 3, 3> invalid(Type(0));
+  f12_.set_matrix(invalid);
+  f13_.set_matrix(invalid);
+  f23_.set_matrix(invalid);
+}
+
+template <class Type>
+void
+vpgl_tri_focal_tensor<Type>::clear_cameras()
+{
+  cameras_valid_ = false;
+  vnl_matrix_fixed<Type, 3, 4> invalid(Type(0));
+  c1_.set_matrix(invalid);
+  c2_.set_matrix(invalid);
+  c3_.set_matrix(invalid);
+}
+
 
 template <class Type>
 void
@@ -82,12 +98,17 @@ template <class Type>
 bool
 vpgl_tri_focal_tensor<Type>::compute_cameras()
 {
+  // cameras already computed
   if (cameras_valid_)
     return true;
-  if (!epipoles_valid_)
-    this->compute_epipoles();
-  if (!epipoles_valid_)
+
+  // ensure valid epipoles
+  if (!this->compute_epipoles())
+  {
+    std::cout << "Cannot compute cameras - invalid epipoles" << std::endl;
     return false;
+  }
+
   c1_ = vpgl_proj_camera<Type>(); // canonical camera
   vnl_vector_fixed<Type, 3> x(Type(1), Type(1), Type(1));
   Type alpha = Type(1), beta = Type(1);
@@ -119,6 +140,9 @@ vpgl_tri_focal_tensor<Type>::set(const vpgl_proj_camera<Type> & c1,
                                  const vpgl_proj_camera<Type> & c2,
                                  const vpgl_proj_camera<Type> & c3)
 {
+  // reset object state
+  this->clear();
+
   vnl_matrix_fixed<Type, 3, 3> M2, M3;
   vnl_vector_fixed<Type, 3> p2, p3;
   cameras_valid_ = true;
@@ -148,6 +172,22 @@ vpgl_tri_focal_tensor<Type>::set(const vpgl_proj_camera<Type> & c1,
       for (size_t k = 0; k < 3; ++k)
         T_(i, j, k) = (M2(j, i) * p3[k] - M3(k, i) * p2[j]);
   this->normalize();
+}
+
+// set cameras and tensor array directly
+template <class Type>
+void
+vpgl_tri_focal_tensor<Type>::set_cams_and_tensor(const vpgl_proj_camera<Type> & c1,
+                                                 const vpgl_proj_camera<Type> & c2,
+                                                 const vpgl_proj_camera<Type> & c3,
+                                                 vbl_array_3d<Type> T)
+{
+  this->clear();
+  c1_ = c1;
+  c2_ = c2;
+  c3_ = c3;
+  T_ = T;
+  cameras_valid_ = true;
 }
 
 // == CONTRACTION WITH VECTORS ==
@@ -1140,13 +1180,14 @@ template <class Type>
 bool
 vpgl_tri_focal_tensor<Type>::compute_f_matrices()
 {
+  // already computed
   if (f_matrices_1213_valid_)
     return true;
-  if (!epipoles_valid_)
-    compute_epipoles();
-  if (!epipoles_valid_)
+
+  // ensure valid epipoles
+  if (!this->compute_epipoles())
   {
-    std::cout << "Can't compute f matrices - epipoles not valid" << std::endl;
+    std::cout << "Cannot compute fundamental matrices - invalid epipoles" << std::endl;
     return false;
   }
 
@@ -1188,10 +1229,17 @@ template <class Type>
 bool
 vpgl_tri_focal_tensor<Type>::compute_f_matrix_23()
 {
+  // already computed
   if (f_matrix_23_valid_)
     return true;
-  if (!cameras_valid_)
+
+  // ensure valid cameras
+  if (!this->compute_cameras())
+  {
+    std::cout << "Cannot compute fmatrix_23 - invalid cameras" << std::endl;
     return false;
+  }
+
   vpgl_fundamental_matrix<Type> f23(c2_, c3_);
   f23_ = f23;
   f_matrix_23_valid_ = true;
