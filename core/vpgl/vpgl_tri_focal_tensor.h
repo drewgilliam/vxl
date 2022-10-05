@@ -215,6 +215,15 @@ class vpgl_tri_focal_tensor
               vpgl_proj_camera<Type>(m3));
   }
 
+  void
+  set(const vnl_matrix_fixed<Type, 3, 4> & m2,
+      const vnl_matrix_fixed<Type, 3, 4> & m3)
+  {
+    this->set(vpgl_proj_camera<Type>(),
+              vpgl_proj_camera<Type>(m2),
+              vpgl_proj_camera<Type>(m3));
+  }
+
   // set cameras used when tri_focal tensor array is set directly
   void
   set_cams_and_tensor(const vpgl_proj_camera<Type> & c1,
