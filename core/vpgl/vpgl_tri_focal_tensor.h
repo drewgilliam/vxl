@@ -96,6 +96,13 @@ class vpgl_tri_focal_tensor
   void
   normalize();
 
+  // set cameras and tensor array directly
+  void
+  set_cams_and_tensor(const vpgl_proj_camera<Type> & c1,
+                      const vpgl_proj_camera<Type> & c2,
+                      const vpgl_proj_camera<Type> & c3,
+                      vbl_array_3d<Type> T);
+
  public:
 
   // Constructors/Initializers/Destructors-----------------------------------
@@ -229,14 +236,6 @@ class vpgl_tri_focal_tensor
               vpgl_proj_camera<Type>(m2),
               vpgl_proj_camera<Type>(m3));
   }
-
-  // set cameras and tensor array directly
-  void
-  set_cams_and_tensor(const vpgl_proj_camera<Type> & c1,
-                      const vpgl_proj_camera<Type> & c2,
-                      const vpgl_proj_camera<Type> & c3,
-                      vbl_array_3d<Type> T);
-
 
   // Data Control------------------------------------------------------------
   //: tri focal tensor point constraint (should be a 3x3 array of all zeros if points correspond)
