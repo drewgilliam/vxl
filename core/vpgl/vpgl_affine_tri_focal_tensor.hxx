@@ -20,6 +20,111 @@ vpgl_affine_tri_focal_tensor<Type>::set(const vpgl_affine_camera<Type> & c1,
   vpgl_tri_focal_tensor<Type>::set(p1, p2, p3);
 }
 
+//: affine fundamental matrices
+template <class Type>
+vpgl_affine_fundamental_matrix<Type>
+vpgl_affine_tri_focal_tensor<Type>::affine_fmatrix_12() const
+{
+  if (!this->f_matrices_1213_valid_)
+    throw std::runtime_error("vpgl_affine_tri_focal_tensor::affine_fmatrix_12 "
+                             "fundamental matrices are not computed");
+
+  vpgl_affine_fundamental_matrix<Type> temp = affine(this->f12_);
+
+  vnl_matrix_fixed<Type, 3, 3> F = temp.get_matrix();
+  vnl_matrix_fixed<Type, 3, 3> K1 = img_pt_transforms_[0].get_matrix();
+  vnl_matrix_fixed<Type, 3, 3> K2 = img_pt_transforms_[1].get_matrix();
+  K2.inplace_transpose();
+
+  vnl_matrix_fixed<Type, 3, 3> ret = K2 * F * K1;
+  Type fbn = ret.frobenius_norm();
+  if (fbn < vgl_tolerance<Type>::position)
+    throw std::runtime_error("vpgl_affine_tri_focal_tensor::affine_fmatrix_12 "
+                             "frobenius norm too small");
+  ret /= fbn;
+  return vpgl_affine_fundamental_matrix<Type>(ret);
+}
+
+template <class Type>
+vpgl_affine_fundamental_matrix<Type>
+vpgl_affine_tri_focal_tensor<Type>::affine_fmatrix_13() const
+{
+  if (!this->f_matrices_1213_valid_)
+    throw std::runtime_error("vpgl_affine_tri_focal_tensor::affine_fmatrix_13 "
+                             "fundamental matrices are not computed");
+
+  vpgl_affine_fundamental_matrix<Type> temp = affine(this->f13_);
+
+  vnl_matrix_fixed<Type, 3, 3> F = temp.get_matrix();
+  vnl_matrix_fixed<Type, 3, 3> K1 = img_pt_transforms_[0].get_matrix();
+  vnl_matrix_fixed<Type, 3, 3> K3 = img_pt_transforms_[2].get_matrix();
+  K3.inplace_transpose();
+
+  vnl_matrix_fixed<Type, 3, 3> ret = K3 * F * K1;
+  Type fbn = ret.frobenius_norm();
+  if (fbn < vgl_tolerance<Type>::position)
+    throw std::runtime_error("vpgl_affine_tri_focal_tensor::affine_fmatrix_13 "
+                             "frobenius norm too small");
+  ret /= fbn;
+  return vpgl_affine_fundamental_matrix<Type>(ret);
+}
+
+template <class Type>
+vpgl_affine_fundamental_matrix<Type>
+vpgl_affine_tri_focal_tensor<Type>::affine_fmatrix_23() const
+{
+  if (!this->f_matrix_23_valid_)
+    throw std::runtime_error("vpgl_affine_tri_focal_tensor::affine_fmatrix_23 "
+                             "fundamental matrices are not computed");
+
+  vpgl_affine_fundamental_matrix<Type> temp = affine(this->f23_);
+
+  vnl_matrix_fixed<Type, 3, 3> F = temp.get_matrix();
+  vnl_matrix_fixed<Type, 3, 3> K2 = img_pt_transforms_[1].get_matrix();
+  vnl_matrix_fixed<Type, 3, 3> K3 = img_pt_transforms_[2].get_matrix();
+  K3.inplace_transpose();
+
+  vnl_matrix_fixed<Type, 3, 3> ret = K3 * F * K2;
+  Type fbn = ret.frobenius_norm();
+  if (fbn < vgl_tolerance<Type>::position)
+    throw std::runtime_error("vpgl_affine_tri_focal_tensor::affine_fmatrix_23 "
+                             "frobenius norm too small");
+  ret /= fbn;
+  return vpgl_affine_fundamental_matrix<Type>(ret);
+}
+
+//: affine cameras
+template <class Type>
+vpgl_affine_camera<Type>
+vpgl_affine_tri_focal_tensor<Type>::affine_camera_1() const
+{
+  if (!this->cameras_valid_)
+    throw std::runtime_error("vpgl_affine_tri_focal_tensor::affine_camera_1 "
+                             "cameras are not computed");
+  return affine(this->c1_);
+}
+
+template <class Type>
+vpgl_affine_camera<Type>
+vpgl_affine_tri_focal_tensor<Type>::affine_camera_2() const
+{
+  if (!this->cameras_valid_)
+    throw std::runtime_error("vpgl_affine_tri_focal_tensor::affine_camera_2 "
+                             "cameras are not computed");
+  return affine(this->c2_);
+}
+
+template <class Type>
+vpgl_affine_camera<Type>
+vpgl_affine_tri_focal_tensor<Type>::affine_camera_3() const
+{
+  if (!this->cameras_valid_)
+    throw std::runtime_error("vpgl_affine_tri_focal_tensor::affine_camera_3 "
+                             "cameras are not computed");
+  return affine(this->c3_);
+}
+
+
 template <class Type>
 bool
 affine(vpgl_proj_camera<Type> const & pcam,

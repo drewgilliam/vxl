@@ -366,103 +366,26 @@ class vpgl_affine_tri_focal_tensor : protected vpgl_tri_focal_tensor<Type>
     return img_pt_transforms_[2].preimage(temp);
   }
 
-  //: fundamental matrices
-  bool
-  fmatrix_12(vpgl_affine_fundamental_matrix<Type> & f_12)
-  {
-    if (!vpgl_tri_focal_tensor<Type>::f_matrices_1213_valid_)
-      vpgl_tri_focal_tensor<Type>::compute_f_matrices();
-    vpgl_affine_fundamental_matrix<Type> temp;
-    bool good = affine(vpgl_tri_focal_tensor<Type>::f12_, temp);
-    if (good)
-    {
-      vnl_matrix_fixed<Type, 3, 3> F = temp.get_matrix();
-      vnl_matrix_fixed<Type, 3, 3> K1 = img_pt_transforms_[0].get_matrix();
-      vnl_matrix_fixed<Type, 3, 3> K2 = img_pt_transforms_[1].get_matrix();
-      K2.inplace_transpose();
-      vnl_matrix_fixed<Type, 3, 3> ret = K2 * F * K1;
-      Type fbn = ret.frobenius_norm();
-      if (fbn < vgl_tolerance<Type>::position)
-        return false;
-      ret /= fbn;
-      f_12.set_matrix(ret);
-    }
-    return good;
-  }
+  //: affine fundamental matrices
+  vpgl_affine_fundamental_matrix<Type>
+  affine_fmatrix_12() const;
 
-  bool
-  fmatrix_13(vpgl_affine_fundamental_matrix<Type> & f_13)
-  {
-    if (!vpgl_tri_focal_tensor<Type>::f_matrices_1213_valid_)
-      vpgl_tri_focal_tensor<Type>::compute_f_matrices();
-    vpgl_affine_fundamental_matrix<Type> temp;
-    bool good = affine(vpgl_tri_focal_tensor<Type>::f13_, temp);
-    if (good)
-    {
-      vnl_matrix_fixed<Type, 3, 3> F = temp.get_matrix();
-      vnl_matrix_fixed<Type, 3, 3> K1 = img_pt_transforms_[0].get_matrix();
-      vnl_matrix_fixed<Type, 3, 3> K3 = img_pt_transforms_[2].get_matrix();
-      K3.inplace_transpose();
-      vnl_matrix_fixed<Type, 3, 3> ret = K3 * F * K1;
-      Type fbn = ret.frobenius_norm();
-      if (fbn < vgl_tolerance<Type>::position)
-        return false;
-      ret /= fbn;
-      f_13.set_matrix(ret);
-    }
-    return good;
-  }
+  vpgl_affine_fundamental_matrix<Type>
+  affine_fmatrix_13() const;
 
-  bool
-  fmatrix_23(vpgl_affine_fundamental_matrix<Type> & f_23)
-  {
-    if (!vpgl_tri_focal_tensor<Type>::f_matrix_23_valid_)
-      vpgl_tri_focal_tensor<Type>::compute_f_matrix_23();
-    vpgl_affine_fundamental_matrix<Type> temp;
-    bool good = affine(vpgl_tri_focal_tensor<Type>::f23_, temp);
-    if (good)
-    {
-      vnl_matrix_fixed<Type, 3, 3> F = temp.get_matrix();
-      vnl_matrix_fixed<Type, 3, 3> K2 = img_pt_transforms_[1].get_matrix();
-      vnl_matrix_fixed<Type, 3, 3> K3 = img_pt_transforms_[2].get_matrix();
-      K3.inplace_transpose();
-      vnl_matrix_fixed<Type, 3, 3> ret = K3 * F * K2;
-      Type fbn = ret.frobenius_norm();
-      if (fbn < vgl_tolerance<Type>::position)
-        return false;
-      ret /= fbn;
-      f_23.set_matrix(ret);
-    }
-    return good;
-  }
+  vpgl_affine_fundamental_matrix<Type>
+  affine_fmatrix_23() const;
 
   //: affine cameras
-  bool
-  affine_camera_1(vpgl_affine_camera<Type> & c1)
-  {
-    if (!vpgl_tri_focal_tensor<Type>::cameras_valid_)
-      vpgl_tri_focal_tensor<Type>::compute_cameras();
-    vpgl_affine_camera<Type> ac;
-    return affine(vpgl_tri_focal_tensor<Type>::c1_, c1);
-  }
+  vpgl_affine_camera<Type>
+  affine_camera_1() const;
 
-  bool
-  affine_camera_2(vpgl_affine_camera<Type> & c2)
-  {
-    if (!vpgl_tri_focal_tensor<Type>::cameras_valid_)
-      vpgl_tri_focal_tensor<Type>::compute_cameras();
-    vpgl_affine_camera<Type> ac;
-    return affine(vpgl_tri_focal_tensor<Type>::c2_, c2);
-  }
+  vpgl_affine_camera<Type>
+  affine_camera_2() const;
 
-  bool
-  affine_camera_3(vpgl_affine_camera<Type> & c3)
-  {
-    if (!vpgl_tri_focal_tensor<Type>::cameras_valid_)
-      vpgl_tri_focal_tensor<Type>::compute_cameras();
-    vpgl_affine_camera<Type> ac;
-    return affine(vpgl_tri_focal_tensor<Type>::c3_, c3);
-  }
+  vpgl_affine_camera<Type>
+  affine_camera_3() const;
+
 
   // INTERNALS---------------------------------------------------------------
  private:
