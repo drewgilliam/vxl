@@ -85,7 +85,9 @@ vpgl_tri_focal_tensor<Type>::normalize()
   Type ptol = vgl_tolerance<Type>::position;
   if (s < ptol)
   {
-    std::cout << " Frobenius norm too low - " << s << " < " << ptol << " can't normalize" << std::endl;
+    std::cerr << "vpgl_tri_focal_tensor::normalize - "
+              << "can't normalize, Frobenius norm too low - "
+              << s << " < " << ptol << std::endl;
     return;
   }
   for (size_t i = 0; i < 3; ++i)
@@ -105,7 +107,8 @@ vpgl_tri_focal_tensor<Type>::compute_cameras()
   // ensure valid epipoles
   if (!this->compute_epipoles())
   {
-    std::cout << "Cannot compute cameras - invalid epipoles" << std::endl;
+    std::cerr << "vpgl_tri_focal_tensor::compute_cameras - "
+              << "cannot compute cameras, invalid epipoles" << std::endl;
     return false;
   }
 
@@ -1149,7 +1152,8 @@ vpgl_tri_focal_tensor<Type>::compute_epipoles()
 
   if (fabs(e12_.x()) < tol && fabs(e12_.y()) < tol && fabs(e12_.w()) < tol)
   {
-    std::cout << "null e12 - fatal" << std::endl;
+    std::cerr << "vpgl_tri_focal_tensor::compute_epipoles "
+              << "- null e12 fatal" << std::endl;
     return false;
   }
 
@@ -1169,7 +1173,8 @@ vpgl_tri_focal_tensor<Type>::compute_epipoles()
   e13_.set(left_nuvec[0], left_nuvec[1], left_nuvec[2]);
   if (fabs(e13_.x()) < tol && fabs(e13_.y()) < tol && fabs(e13_.w()) < tol)
   {
-    std::cout << "null e13 - fatal" << std::endl;
+    std::cerr << "vpgl_tri_focal_tensor::compute_epipoles "
+              << "- null e13 fatal" << std::endl;
     return false;
   }
   epipoles_valid_ = true;
@@ -1187,7 +1192,9 @@ vpgl_tri_focal_tensor<Type>::compute_f_matrices()
   // ensure valid epipoles
   if (!this->compute_epipoles())
   {
-    std::cout << "Cannot compute fundamental matrices - invalid epipoles" << std::endl;
+    std::cerr << "vpgl_tri_focal_tensor::compute_f_matrices - "
+              << "cannot compute fundamental matrices, invalid epipoles"
+              << std::endl;
     return false;
   }
 
@@ -1236,7 +1243,8 @@ vpgl_tri_focal_tensor<Type>::compute_f_matrix_23()
   // ensure valid cameras
   if (!this->compute_cameras())
   {
-    std::cout << "Cannot compute fmatrix_23 - invalid cameras" << std::endl;
+    std::cerr << "vpgl_tri_focal_tensor::compute_f_matrix_23 - "
+              << "cannot compute fmatrix_23, invalid cameras" << std::endl;
     return false;
   }
 
