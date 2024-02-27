@@ -1,5 +1,6 @@
 #include <iostream>
 #include <iomanip>
+#include <vector>
 #include "testlib/testlib_test.h"
 #include "vpgl/vpgl_lvcs.h"
 
@@ -70,6 +71,169 @@ test_lvcs_force(double lat, double lon, double elev,
   TEST_NEAR("local_to_global UTM easting", x, easting, meter_tol);
   TEST_NEAR("local_to_global UTM northing", y, northing, meter_tol);
   TEST_NEAR("local_to_global UTM elevation", z, elev, meter_tol);
+}
+
+
+void
+_test_lvcs_global_to_local_wgs84(
+    vpgl_lvcs lvcs,
+    double lat, double lon, double elev,
+    double lat_off, double lon_off, double elev_off,
+    double meter_tol, double degree_tol, std::string msg="")
+{
+  // report
+  std::cout << "global_to_local(WGS84 offset ["
+            << lat_off << ", " << lon_off << ", " << elev_off << "]";
+  if (!msg.empty())
+    std::cout << ", " << msg;
+  std::cout << ")\n";
+
+  // global_to_local
+  double x, y, z;
+  lvcs.global_to_local(lon + lon_off, lat + lat_off, elev + elev_off,
+                       vpgl_lvcs::wgs84, x, y, z);
+
+  // test returned longitude moved in the expected direction
+  if (lon_off > 0)
+    TEST_EQUAL("local_x positive shift", x > 0, true);
+  else if (lon_off < 0)
+    TEST_EQUAL("local_x negative shift", x < 0, true);
+  else
+    TEST_NEAR("local_x", x, 0.0, meter_tol);
+
+  // test returned latitude moved in the expected direction
+  if (lat_off > 0)
+    TEST_EQUAL("local_y positive shift", y > 0, true);
+  else if (lat_off < 0)
+    TEST_EQUAL("local_y negative shift", y < 0, true);
+  else
+    TEST_NEAR("local_y", y, 0.0, meter_tol);
+
+  // test z
+  TEST_NEAR("local_z", z, elev_off, meter_tol);
+}
+
+
+void
+_test_lvcs_antimeridian(vpgl_lvcs lvcs,
+                        double lat, double lon, double elev,
+                        double meter_tol, double degree_tol)
+{
+  // results
+  double x, y, z;
+  double easting, northing;
+  int utm_zone;
+  bool south_flag;
+
+  // WGS84 offsets as (lat, lon, elev)
+  std::vector<std::vector<double> > wgs84_offsets = {
+      {0, 0, 0},
+      {0.1, 0.1, 100},
+      {-0.1, -0.1, -100},
+    };
+
+  // UTM offsets
+  std::vector<double> utm_offsets = {0, 100, -100};
+
+  // positive/negative longitude
+  double plon = (lon > 0) ? lon : lon + 360.0;
+  double nlon = (lon < 0) ? lon : lon - 360.0;
+
+  // LVCS type
+  auto cs_name = lvcs.get_cs_name();
+  std::string cs_str = vpgl_lvcs::cs_name_strings[cs_name];
+
+  // report
+  std::cout << "\nTest " << cs_str << " lvcs around antimeridian\n"
+            << "(lat, lon) = (" << lat << ", " << lon << ")\n";
+
+  if (cs_name == vpgl_lvcs::utm)
+  {
+    lvcs.get_utm_origin(easting, northing, z, utm_zone, south_flag);
+    std::cout << "(easting, northing, utm_zone, south_flag) = ("
+              << easting << ", " << northing << ", "
+              << utm_zone << ", " << south_flag << ")\n";
+  }
+
+  // global->local, WGS84 input with offsets
+  for (auto & offset : wgs84_offsets)
+  {
+    std::stringstream msg;
+
+    // WGS84 input
+    _test_lvcs_global_to_local_wgs84(lvcs, lat, lon, elev,
+                                     offset[0], offset[1], offset[2],
+                                     meter_tol, degree_tol);
+
+    // WGS84 input with positive longitude
+    msg.str("");
+    msg << "pos lon " << plon;
+    _test_lvcs_global_to_local_wgs84(lvcs, lat, plon, elev,
+                                     offset[0], offset[1], offset[2],
+                                     meter_tol, degree_tol, msg.str());
+
+    // WGS84 input with negative longitude
+    msg.str("");
+    msg << "neg lon " << nlon;
+    _test_lvcs_global_to_local_wgs84(lvcs, lat, nlon, elev,
+                                     offset[0], offset[1], offset[2],
+                                     meter_tol, degree_tol, msg.str());
+  }
+
+  // global->local, UTM input with offset
+  if (cs_name == vpgl_lvcs::utm)
+  {
+    for (auto & offset : utm_offsets)
+    {
+      std::cout << "global_to_local(UTM offset " << offset << ")\n";
+      lvcs.global_to_local(easting + offset, northing + offset, elev + offset,
+                           vpgl_lvcs::utm, x, y, z);
+      TEST_NEAR("local_x", x, offset, meter_tol);
+      TEST_NEAR("local_y", y, offset, meter_tol);
+      TEST_NEAR("local_z", z, offset, meter_tol);
+    }
+  }
+
+}
+
+
+void
+test_lvcs_antimeridian(double lat, double lon, double elev,
+                       double meter_tol, double degree_tol)
+{
+  // WGS84 LVCS
+  vpgl_lvcs lvcs_wgs84(lat, lon, elev, vpgl_lvcs::wgs84,
+                       vpgl_lvcs::DEG, vpgl_lvcs::METERS);
+  _test_lvcs_antimeridian(lvcs_wgs84, lat, lon, elev,
+                          meter_tol, degree_tol);
+
+  // UTM LVCS
+  vpgl_lvcs lvcs_utm(lat, lon, elev, vpgl_lvcs::utm,
+                     vpgl_lvcs::DEG, vpgl_lvcs::METERS);
+  _test_lvcs_antimeridian(lvcs_utm, lat, lon, elev,
+                          meter_tol, degree_tol);
+
+  // UTM zone
+  int utm_zone;
+  bool south_flag;
+  lvcs_utm.get_utm(utm_zone, south_flag);
+
+  // For UTM zone 1, also test in UTM zone 60
+  if (utm_zone == 1)
+  {
+    std::cout << "\nForce to UTM zone 60 (east-most zone)";
+    lvcs_utm.set_utm(60, south_flag);
+    _test_lvcs_antimeridian(lvcs_utm, lat, lon, elev,
+                            meter_tol, degree_tol);
+  }
+  // For UTM zone 60, also test in UTM zone 1
+  else if (utm_zone == 60)
+  {
+    std::cout << "\nForce to UTM zone 1 (west-most zone)";
+    lvcs_utm.set_utm(1, south_flag);
+    _test_lvcs_antimeridian(lvcs_utm, lat, lon, elev,
+                            meter_tol, degree_tol);
+  }
 }
 
 
@@ -205,6 +369,15 @@ test_lvcs()
   test_lvcs_force(orig_lat, orig_lon, orig_elev,
                   166010.300, 10e6 + 110.683, 19, 1,
                   meter_tol, degree_tol);
+
+
+  // ----- Antimeridian -----
+  // Test points near the antimeridian, where longitude changes from
+  // 180° to -180°.
+  test_lvcs_antimeridian(71.0,  179.0, 100.0, meter_tol, degree_tol);
+  test_lvcs_antimeridian(71.0,  181.0, 100.0, meter_tol, degree_tol);
+  test_lvcs_antimeridian(71.0, -179.0, 100.0, meter_tol, degree_tol);
+  test_lvcs_antimeridian(71.0, -181.0, 100.0, meter_tol, degree_tol);
 
 }
 
