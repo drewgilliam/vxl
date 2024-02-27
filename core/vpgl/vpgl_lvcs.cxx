@@ -439,7 +439,8 @@ vpgl_lvcs::local_to_global(const double pointin_x,
                            double & pointout_lat,
                            double & pointout_z,
                            AngUnits output_ang_unit,
-                           LenUnits output_len_unit) const
+                           LenUnits output_len_unit,
+                           int force_longitude_sign) const
 {
   double local_to_meters, local_to_feet, local_to_radians, local_to_degrees;
   this->get_angle_conversions(local_to_radians, local_to_degrees);
@@ -581,6 +582,30 @@ vpgl_lvcs::local_to_global(const double pointin_x,
 
   // at this point, global_lat and global_lon are in degrees.
 
+  // ensure longitude is relative to the origin. This is achieved by wrapping
+  // the longitude difference relative to origin on the range [-180, 180),
+  // then adding the wrapped difference back to the origin. This effectively
+  // handles excursions crossing the antimeridian.
+  double dlon = global_lon - localCSOriginLon_ * local_to_degrees;
+  dlon = std::fmod(dlon + 180.0, 360.0);
+  dlon = (dlon < 0) ? dlon + 360.0 : dlon;
+  dlon = dlon - 180.0;
+
+  global_lon = dlon + localCSOriginLon_ * local_to_degrees;
+
+  // force longitude sign
+  // this is useful around the antimeridian, where users may have need to
+  // produce longitude values outside the typical range [-180, 180)
+  if (force_longitude_sign > 0)
+  {
+    global_lon = (global_lon > 0) ? global_lon : global_lon + 360.0;
+  }
+  else if (force_longitude_sign < 0)
+  {
+    global_lon = (global_lon < 0) ? global_lon : global_lon - 360.0;
+  }
+
+  // degrees or radians
   if (output_ang_unit == DEG)
   {
     pointout_lon = global_lon;
@@ -592,6 +617,7 @@ vpgl_lvcs::local_to_global(const double pointin_x,
     pointout_lat = global_lat * DEGREES_TO_RADIANS;
   }
 
+  // meters or feet
   if (output_len_unit == METERS)
     pointout_z = global_elev;
   else

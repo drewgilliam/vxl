@@ -92,6 +92,8 @@ _test_lvcs_global_to_local_wgs84(
   double x, y, z;
   lvcs.global_to_local(lon + lon_off, lat + lat_off, elev + elev_off,
                        vpgl_lvcs::wgs84, x, y, z);
+  std::cout << "produced (x, y, z) = ("
+            << x << ", " << y << ", " << z << ")\n";
 
   // test returned longitude moved in the expected direction
   if (lon_off > 0)
@@ -115,6 +117,47 @@ _test_lvcs_global_to_local_wgs84(
 
 
 void
+_test_lvcs_local_to_global_wgs84(
+    vpgl_lvcs lvcs,
+    double lat, double lon, double elev, double offset,
+    double meter_tol, double degree_tol,
+    int force_longitude_sign=0, std::string msg="")
+{
+  // report
+  std::cout << "local_to_global(offset " << offset << ") -> WGS84";
+  if (!msg.empty())
+    std::cout << ", " << msg;
+  std::cout << "\n";
+
+  // local_to_global
+  double x, y, z;
+  lvcs.local_to_global(offset, offset, offset, vpgl_lvcs::wgs84, x, y, z,
+                       vpgl_lvcs::DEG, vpgl_lvcs::METERS, force_longitude_sign);
+  std::cout << "produced (lon, lat, elev) = ("
+            << x << ", " << y << ", " << z << ")\n";
+
+  // test returned longitude moved in the expected direction
+  if (offset > 0)
+    TEST_EQUAL("longitude positive shift", x > lon, true);
+  else if (offset < 0)
+    TEST_EQUAL("longitude negative shift", x < lon, true);
+  else
+    TEST_NEAR("longitude", x, lon, meter_tol);
+
+  // test returned latitude moved in the expected direction
+  if (offset > 0)
+    TEST_EQUAL("latitude positive shift", y > lat, true);
+  else if (offset < 0)
+    TEST_EQUAL("latitude negative shift", y < lat, true);
+  else
+    TEST_NEAR("latitude", y, lat, meter_tol);
+
+  // test z
+  TEST_NEAR("elevation", z, elev + offset, meter_tol);
+}
+
+
+void
 _test_lvcs_antimeridian(vpgl_lvcs lvcs,
                         double lat, double lon, double elev,
                         double meter_tol, double degree_tol)
@@ -125,15 +168,15 @@ _test_lvcs_antimeridian(vpgl_lvcs lvcs,
   int utm_zone;
   bool south_flag;
 
+  // meter offsets
+  std::vector<double> meter_offsets = {0, 100, -100};
+
   // WGS84 offsets as (lat, lon, elev)
   std::vector<std::vector<double> > wgs84_offsets = {
       {0, 0, 0},
       {0.1, 0.1, 100},
       {-0.1, -0.1, -100},
     };
-
-  // UTM offsets
-  std::vector<double> utm_offsets = {0, 100, -100};
 
   // positive/negative longitude
   double plon = (lon > 0) ? lon : lon + 360.0;
@@ -154,6 +197,45 @@ _test_lvcs_antimeridian(vpgl_lvcs lvcs,
               << easting << ", " << northing << ", "
               << utm_zone << ", " << south_flag << ")\n";
   }
+  std::cout << "\n";
+
+  // WGS84 origin
+  std::cout << "WGS84 origin\n";
+  lvcs.get_origin(y, x, z);
+
+  TEST_NEAR("longitude", x, lon, degree_tol);
+  TEST_NEAR("latitude", y, lat, degree_tol);
+  TEST_NEAR("elevation", z, elev, meter_tol);
+
+  // local->global, offset input, WGS84 output
+  for (auto & offset : meter_offsets)
+  {
+    // standard output
+    _test_lvcs_local_to_global_wgs84(lvcs, lat, lon, elev, offset,
+                                     meter_tol, degree_tol);
+
+    // output with positive longitude
+    _test_lvcs_local_to_global_wgs84(lvcs, lat, plon, elev, offset,
+                                     meter_tol, degree_tol, 1, "pos lon");
+
+    // output input with negative longitude
+    _test_lvcs_local_to_global_wgs84(lvcs, lat, nlon, elev, offset,
+                                     meter_tol, degree_tol, -1, "neg lon");
+  }
+
+  // local->global, UTM output with offset
+  if (cs_name == vpgl_lvcs::utm)
+  {
+    for (auto & offset : meter_offsets)
+    {
+      std::cout << "local_to_global(offset " << offset << ") -> UTM\n";
+      lvcs.local_to_global(offset, offset, offset, vpgl_lvcs::utm, x, y, z);
+      TEST_NEAR("easting", x, easting + offset, degree_tol);
+      TEST_NEAR("northing", y, northing + offset, degree_tol);
+      TEST_NEAR("elevation", z, elev + offset, meter_tol);
+    }
+  }
+
 
   // global->local, WGS84 input with offsets
   for (auto & offset : wgs84_offsets)
@@ -183,7 +265,7 @@ _test_lvcs_antimeridian(vpgl_lvcs lvcs,
   // global->local, UTM input with offset
   if (cs_name == vpgl_lvcs::utm)
   {
-    for (auto & offset : utm_offsets)
+    for (auto & offset : meter_offsets)
     {
       std::cout << "global_to_local(UTM offset " << offset << ")\n";
       lvcs.global_to_local(easting + offset, northing + offset, elev + offset,

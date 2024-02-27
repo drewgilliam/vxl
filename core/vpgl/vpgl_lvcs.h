@@ -94,7 +94,8 @@ class vpgl_lvcs : public vbl_ref_count
                        cs_names cs_name,        // this is output global cs
                        double& lon, double& lat, double& gz,
                        AngUnits output_ang_unit=DEG,
-                       LenUnits output_len_unit=METERS) const;
+                       LenUnits output_len_unit=METERS,
+                       int force_longitude_sign=0) const;
 
   void global_to_local(const double lon, const double lat, const double gz,
                        cs_names cs_name,        // this is input global cs
