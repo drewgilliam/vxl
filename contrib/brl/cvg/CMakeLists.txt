@@ -18,6 +18,6 @@ if( HAS_VGUI )
 
   #Create Executables
   add_executable( cvg_hemisphere_view cvg_hemisphere_view.cxx )
-  target_link_libraries( cvg_hemisphere_view cvg_view ${VXL_LIB_PREFIX}vul ${VXL_LIB_PREFIX}vgui vil_pro vpgl_pro vsph)
+  target_link_libraries( cvg_hemisphere_view cvg_view ${VXL_LIB_PREFIX}vul ${VXL_LIB_PREFIX}vgui vsph)
 
 endif()
